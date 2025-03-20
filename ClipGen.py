@@ -351,7 +351,7 @@ class ClipGen(ClipGenView):
             time.sleep(0.1)
             win32api.keybd_event(ord('C'), 0, win32con.KEYEVENTF_KEYUP, 0)
             win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
-            time.sleep(0.3)
+            time.sleep(0.1)
 
             is_image = action == "Анализ изображения"
             if is_image:
@@ -359,8 +359,17 @@ class ClipGen(ClipGenView):
             else:
                 text = pyperclip.paste()
                 if not text.strip():
-                    logger.warning(f"[{combo}: {action}] Буфер обмена пуст")
-                    return
+                    # Пробуем снова скопировать
+                    win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
+                    win32api.keybd_event(ord('C'), 0, 0, 0)
+                    time.sleep(0.5)
+                    win32api.keybd_event(ord('C'), 0, win32con.KEYEVENTF_KEYUP, 0)
+                    win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
+                    time.sleep(0.5)
+                    text = pyperclip.paste()
+                    if not text.strip():
+                        logger.warning(f"[{combo}: {action}] Буфер обмена пуст после двух попыток копирования")
+                        return
                 processed_text = self.process_text_with_gemini(text, action, prompt)
 
             if processed_text:
@@ -369,7 +378,7 @@ class ClipGen(ClipGenView):
                 time.sleep(0.3)
                 win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
                 win32api.keybd_event(ord('V'), 0, 0, 0)
-                time.sleep(0.1)
+                time.sleep(0.2)
                 win32api.keybd_event(ord('V'), 0, win32con.KEYEVENTF_KEYUP, 0)
                 win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
         except Exception as e:
