@@ -17,7 +17,7 @@ from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint
 from PyQt5.QtWidgets import QApplication
 import ctypes
 from ctypes import windll, c_bool, c_int, byref, POINTER, Structure
-from ClipGen_view import ClipGenView
+from libs.ClipGen_view import ClipGenView
 
 # Настройка логирования
 logger = logging.getLogger('ClipGen')
