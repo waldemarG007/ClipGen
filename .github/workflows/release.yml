@@ -2,12 +2,13 @@ name: Regular Release
 
 on:
     push:
-        tags:
-            - 'v*'
-        branches:
-            - main
+      tags:
+        - 'v*'
+      branches:
+        - 'main'
+        - '!dev'
+      
     workflow_dispatch:
-
 jobs:
   build:
     runs-on: windows-latest
