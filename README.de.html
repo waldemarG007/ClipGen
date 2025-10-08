@@ -1,0 +1,333 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClipGen README</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            line-height: 1.6;
+            color: #24292e;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        h1 {
+            font-size: 2em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: .3em;
+        }
+        h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: .3em;
+        }
+        a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            background-color: rgba(27,31,35,.05);
+            padding: .2em .4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 3px;
+        }
+        pre {
+            background-color: #f6f8fa;
+            padding: 16px;
+            overflow: auto;
+            border-radius: 6px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            margin: 0;
+            font-size: 100%;
+            border-radius: 0;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            box-sizing: content-box;
+            background-color: #fff;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        th, td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        th {
+            font-weight: 600;
+            background-color: #f6f8fa;
+        }
+        ul {
+            padding-left: 2em;
+        }
+    </style>
+</head>
+<body>
+<h1>ClipGen</h1>
+<div align="center">
+   <img src="screenshots/clipgen-logo.png" alt="ClipGen Logo" width="200"/>
+   <p><em>KI-gestütztes Dienstprogramm zur Erweiterung der Zwischenablage mit Hotkeys für sofortige Textkorrektur, Übersetzung, Umformulierung und Bildanalyse über die Google Gemini API.</em></p>
+</div>
+
+<h2>🚀 Übersicht</h2>
+<p>ClipGen ist ein leistungsstarkes Desktop-Dienstprogramm, das die Art und Weise, wie Sie mit Texten und Bildern auf Ihrem Computer interagieren, revolutioniert. Mit der Google Gemini API führt ClipGen blitzschnelle KI-Operationen auf den Inhalten Ihrer Zwischenablage mit einfachen Tastenkombinationen durch.</p>
+<p><strong>Geschwindigkeit ist unsere Priorität</strong> – ClipGen verarbeitet kurze Texte in weniger als 0,5 Sekunden und längere Texte in nur wenigen Sekunden. Dadurch fühlt es sich wie ein nativer Teil Ihres Betriebssystems an und nicht wie ein externes Werkzeug.</p>
+<p><img alt="ClipGen in Aktion" src="screenshots/clipgen-demo.gif" />
+<strong><a href="http://vetaone.site/ClipGen/ClipGen.zip">Laden Sie ClipGen hier herunter</a></strong><br />
+<em>Wichtig: Vergessen Sie nicht, den API-Schlüssel in der Konfigurationsdatei <code>settings.json</code> durch Ihren eigenen zu ersetzen! Sie können einen kostenlosen API-Schlüssel im <a href="https://aistudio.google.com/u/0/apikey">Google AI Studio</a> erhalten.</em></p>
+<h2>💰 Völlig KOSTENLOS!</h2>
+<p>ClipGen verwendet das Modell <strong>models/gemini-2.0-flash-exp</strong> von Google, das <strong>1.000 KOSTENLOSE Anfragen pro Tag</strong> über die Google Gemini API beinhaltet! Das bedeutet:</p>
+<ul>
+<li>✅ <strong>Keine Abonnementgebühren</strong></li>
+<li>✅ <strong>Keine Nutzungsgebühren</strong></li>
+<li>✅ <strong>Keine Kreditkarte erforderlich</strong></li>
+<li>✅ <strong>Leistungsstarke KI völlig kostenlos</strong></li>
+</ul>
+<p>Mit 1.000 täglichen Anfragen können Sie Hunderte von Texten verarbeiten und Informationen aus Bildern extrahieren, ohne einen Cent zu bezahlen. Das Modell bietet eine hervorragende Balance zwischen Intelligenz und Geschwindigkeit und ermöglicht alle leistungsstarken Funktionen von ClipGen zum Nulltarif.</p>
+<h2>✨ Funktionen</h2>
+<ul>
+<li>🆓 <strong>Völlig kostenlos</strong> – 1.000 Anfragen pro Tag ohne Kosten</li>
+<li>🔄 <strong>Ultraschnelle Verarbeitung</strong> – Ergebnisse für kurze Texte in Millisekunden und für längere Texte in Sekunden</li>
+<li>⌨️ <strong>Hotkey-gesteuerter Arbeitsablauf</strong> – Kein Wechsel zwischen Anwendungen erforderlich</li>
+<li>⚙️ <strong>System-Tray-Integration</strong> – Läuft unauffällig im Hintergrund.</li>
+<li>🚀 <strong>Autostart mit Windows</strong> – Startet ClipGen automatisch beim Hochfahren.</li>
+<li>🖥️ <strong>Globaler Hotkey zum Anzeigen/Verstecken</strong> – Greifen Sie von überall auf das Fenster zu.</li>
+<li>✏️ <strong>Anpassbare Schriftgröße</strong> – Passen Sie die Schriftgröße für eine bessere Lesbarkeit an.</li>
+<li>🧠 <strong>KI-gestützte Operationen</strong>:</li>
+<li>Korrektur von Grammatik, Zeichensetzung und Rechtschreibung</li>
+<li>Umformulierung und Verbesserung von Texten</li>
+<li>Übersetzung zwischen mehr als 140 Sprachen</li>
+<li>Erklärung komplexer Begriffe oder Konzepte</li>
+<li>Beantwortung von Fragen basierend auf dem Inhalt der Zwischenablage</li>
+<li>Bildanalyse, Textextraktion und Erklärung</li>
+<li>Benutzerdefinierte Anfragen</li>
+<li>Generierung humorvoller Kommentare – vollständig anpassbare Prompts, die zu Ihrem Stil passen</li>
+</ul>
+<h2>📸 Screenshots</h2>
+<h3>Hauptoberfläche</h3>
+<p><img alt="Hauptoberfläche" src="screenshots/main-interface.png" /></p>
+<h3>Beispiel für Grammatikkorrektur</h3>
+<p><img alt="Grammatikkorrektur" src="screenshots/correction-example.png" /></p>
+<h3>Beispiel für Bildanalyse</h3>
+<p><img alt="Bildanalyse" src="screenshots/image-analysis.png" /></p>
+<h2>🛠️ Installation</h2>
+<h3>Voraussetzungen</h3>
+<ul>
+<li>Python 3.8 oder höher</li>
+<li>Windows-Betriebssystem (derzeit nur für Windows)</li>
+<li>Google Gemini API-Schlüssel (kostenlos erhältlich)</li>
+</ul>
+<h3>Einrichtung</h3>
+<ol>
+<li>
+<p><strong>Klonen Sie das Repository</strong>
+   <code>git clone https://github.com/Veta-one/clipgen.git
+   cd clipgen</code></p>
+</li>
+<li>
+<p><strong>Installieren Sie die Abhängigkeiten</strong>
+   <code>pip install -r requirements.txt</code></p>
+</li>
+<li>
+<p><strong>Holen Sie sich einen KOSTENLOSEN Google Gemini API-Schlüssel</strong></p>
+</li>
+<li>Besuchen Sie direkt das <a href="https://aistudio.google.com/u/0/apikey">Google AI Studio</a></li>
+<li>Erstellen Sie einen neuen API-Schlüssel (keine Kreditkarte erforderlich)</li>
+<li>Kopieren Sie Ihren API-Schlüssel</li>
+<li>
+<p>Mit diesem Schlüssel erhalten Sie 1.000 kostenlose Anfragen pro Tag!</p>
+</li>
+<li>
+<p><strong>Konfigurieren Sie ClipGen</strong></p>
+</li>
+<li>Öffnen Sie <code>settings.json</code> in einem Texteditor.</li>
+<li>
+<p>Ersetzen Sie den Platzhalter-API-Schlüssel durch Ihren eigenen:
+     <code>json
+     {
+         "api_key": "DEIN_API_SCHLÜSSEL_HIER"
+     }</code></p>
+</li>
+<li>
+<p><strong>Führen Sie die Anwendung aus</strong>
+   <code>python ClipGen.py</code></p>
+</li>
+</ol>
+<h2>📋 Anforderungen</h2>
+<p>Erstellen Sie eine Datei namens <code>requirements.txt</code> mit folgendem Inhalt:</p>
+<p><code>pillow
+pyperclip
+google-generativeai
+pywin32
+pynput
+PyQt5</code></p>
+<h2>🔥 Wie man es benutzt</h2>
+<ol>
+<li><strong>Starten Sie ClipGen</strong> – Führen Sie die Anwendung aus. Sie wird in den System-Tray minimiert.</li>
+<li><strong>Fenster umschalten</strong> – Verwenden Sie den globalen Hotkey (<code>Strg+Umschalt+C</code> standardmäßig) oder klicken Sie auf das Tray-Icon, um das Fenster anzuzeigen/zu verstecken.</li>
+<li><strong>Wählen Sie Inhalte aus</strong> – Bei Text einfach markieren (kein Kopieren nötig); bei Bildern einen Screenshot machen oder das Bild in die Zwischenablage kopieren.</li>
+<li><strong>Verwenden Sie Hotkeys</strong> – Drücken Sie die entsprechende Tastenkombination, um eine Aktion auszuführen.</li>
+<li><strong>Sehen Sie die Ergebnisse</strong> – Der verarbeitete Inhalt wird automatisch wieder eingefügt.</li>
+</ol>
+<h3>Hotkey-Referenz</h3>
+<table>
+<thead>
+<tr>
+<th>Hotkey</th>
+<th>Funktion</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Strg+Umschalt+C (Standard)</td>
+<td>Fenster anzeigen/verstecken</td>
+<td>Schaltet die Sichtbarkeit des Hauptfensters um</td>
+</tr>
+<tr>
+<td>Strg+F1</td>
+<td>Korrektur</td>
+<td>Korrigiert Grammatik, Zeichensetzung und Rechtschreibung</td>
+</tr>
+<tr>
+<td>Strg+F2</td>
+<td>Umschreiben</td>
+<td>Verbessert die Klarheit und Lesbarkeit von Texten</td>
+</tr>
+<tr>
+<td>Strg+F3</td>
+<td>Übersetzung</td>
+<td>Übersetzt Text zwischen über 140 Sprachen</td>
+</tr>
+<tr>
+<td>Strg+F6</td>
+<td>Erklärung</td>
+<td>Erklärt komplexe Konzepte in einfachen Worten</td>
+</tr>
+<tr>
+<td>Strg+F7</td>
+<td>Antwort</td>
+<td>Beantwortet Fragen in der Zwischenablage</td>
+</tr>
+<tr>
+<td>Strg+F8</td>
+<td>Eigene Anfrage</td>
+<td>Führt die angegebene Aufgabe aus</td>
+</tr>
+<tr>
+<td>Strg+F9</td>
+<td>Kommentar</td>
+<td>Generiert humorvolle Kommentare</td>
+</tr>
+<tr>
+<td>Strg+F10</td>
+<td>Bildanalyse</td>
+<td>Analysiert Bilder, extrahiert Text und erklärt Inhalte</td>
+</tr>
+</tbody>
+</table>
+<h2>💡 Anwendungsfälle</h2>
+<ul>
+<li><strong>Autoren/Redakteure</strong>: Sätze sofort verbessern, ohne zu Grammatik-Tools zu wechseln.</li>
+<li><strong>Mehrsprachige Kommunikation</strong>: Nachrichten schnell zwischen beliebigen Sprachen übersetzen.</li>
+<li><strong>Studenten</strong>: Erklärungen für komplexe Begriffe oder Konzepte erhalten.</li>
+<li><strong>Entwickler</strong>: Fehlermeldungen bereinigen oder Text aus Screenshots extrahieren.</li>
+<li><strong>Soziale Medien</strong>: Memes oder Bilder verstehen, wenn der Kontext unklar ist.</li>
+<li><strong>Alltäglicher Gebrauch</strong>: Tippfehler in jedem Textfeld in allen Anwendungen korrigieren.</li>
+</ul>
+<h2>⚙️ Anpassung</h2>
+<p>Sie können ClipGen umfassend anpassen, indem Sie die Datei <code>settings.json</code> bearbeiten:</p>
+<p><code>json
+{
+    "api_key": "DEIN_API_SCHLÜSSEL_HIER",
+    "autostart": false,
+    "show_hide_hotkey": "Ctrl+Shift+C",
+    "font_size": 10,
+    "hotkeys": [
+        {
+            "combination": "Ctrl+F1",
+            "name": "Korrektur",
+            "log_color": "#FFFFFF",
+            "prompt": "Bitte korrigiere den folgenden Text..."
+        },
+        ...
+    ]
+}</code></p>
+<p>Jeder Aspekt kann angepasst werden:
+- <code>autostart</code>: Setzen Sie dies auf <code>true</code>, damit ClipGen beim Windows-Start gestartet wird.
+- <code>show_hide_hotkey</code>: Der globale Hotkey zum Anzeigen oder Verstecken des Anwendungsfensters.
+- <code>font_size</code>: Die Schriftgröße für den Log-Textbereich.
+- <code>hotkeys</code>: Passen Sie die KI-Aktionen an:
+  - <code>combination</code>: Die Tastenkombination.
+  - <code>name</code>: Anzeigename in der Benutzeroberfläche.
+  - <code>log_color</code>: Farbe im Anwendungsprotokoll.
+  - <code>prompt</code>: Die Anweisung, die an Gemini AI gesendet wird.</p>
+<h2>🚀 Warum ClipGen?</h2>
+<p>ClipGen transformiert Ihren Arbeitsablauf am Computer, indem es Kontextwechsel eliminiert. Anstatt:</p>
+<ol>
+<li>Text in einer Anwendung zu schreiben</li>
+<li>Ein Grammatik-Tool oder einen Übersetzer in einem anderen Fenster zu öffnen</li>
+<li>Text in das neue Tool zu kopieren</li>
+<li>Auf die Verarbeitung zu warten</li>
+<li>Das Ergebnis zu kopieren</li>
+<li>Zurück zu Ihrer ursprünglichen Anwendung zu wechseln</li>
+<li>Das Ergebnis einzufügen</li>
+</ol>
+<p>Mit ClipGen wird der Prozess zu:
+1. Text in einer beliebigen Anwendung schreiben
+2. Eine Tastenkombination drücken
+3. Mit dem korrigierten Text weiterarbeiten</p>
+<p>Diese nahtlose Integration schafft ein neues Computererlebnis, bei dem sich die KI-Unterstützung wie eine natürliche Erweiterung Ihrer Tastatur anfühlt.</p>
+<h2>🧠 Über das KI-Modell</h2>
+<p>ClipGen verwendet das leistungsstarke Modell <strong>models/gemini-2.0-flash-exp</strong> von Google, das Folgendes bietet:</p>
+<ul>
+<li><strong>Schnelle Antwortzeiten</strong> – Perfekt für die Echtzeit-Textverarbeitung</li>
+<li><strong>Hohe Genauigkeit</strong> – Hervorragende Ergebnisse für Grammatik-, Übersetzungs- und Analyseaufgaben</li>
+<li><strong>Multimodale Fähigkeiten</strong> – Analysiert mühelos sowohl Text als auch Bilder</li>
+<li><strong>1.000 kostenlose API-Aufrufe täglich</strong> – Mehr als genug für den persönlichen und beruflichen Gebrauch</li>
+</ul>
+<h2>🔒 Datenschutz</h2>
+<p>ClipGen verarbeitet Text lokal und sendet Inhalte nur dann an die Google Gemini API, wenn eine Tastenkombination gedrückt wird. Es werden keine Daten über die aktuelle Sitzung hinaus gespeichert oder protokolliert.</p>
+<h2>📅 Geplant</h2>
+<ul>
+<li>Unterstützung für macOS und Linux hinzufügen.</li>
+<li>Funktionalität erweitern, um mit anderen APIs zu arbeiten.</li>
+<li>Verbesserung der Benutzeroberfläche und Hinzufügen von Hotkey-Einstellungen.</li>
+</ul>
+<h2>📄 Lizenz</h2>
+<p>Dieses Projekt ist unter der MIT-Lizenz lizenziert – siehe die LIZENZ-Datei für Details.</p>
+<h2>👨‍💻 Über den Autor</h2>
+<p><strong>Vitalii Kalistratov</strong>
+- Website: <a href="https://vetaone.site">vetaone.site</a>
+- Wenn Sie dieses Projekt unterstützen oder sich bedanken möchten:
+  - USDT TRC20: <code>TEJw2gRrW5Z6Drowk7icjp5DhZvAEPwCYY</code></p>
+<h2>🙏 Danksagung</h2>
+<ul>
+<li><a href="https://github.com/google/generative-ai-python">Google Generative AI</a> für die Gemini API und den kostenlosen Zugang</li>
+<li><a href="https://riverbankcomputing.com/software/pyqt/intro">PyQt5</a> für die UI-Komponenten</li>
+</ul>
+</body>
+</html>

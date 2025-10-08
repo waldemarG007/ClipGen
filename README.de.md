@@ -13,7 +13,7 @@ ClipGen ist ein leistungsstarkes Desktop-Dienstprogramm, das die Art und Weise, 
 
 ![ClipGen in Aktion](screenshots/clipgen-demo.gif)
 **[Laden Sie ClipGen hier herunter](http://vetaone.site/ClipGen/ClipGen.zip)**
-*Wichtig: Vergessen Sie nicht, den API-Schlüssel in den Konfigurationsdateien (`settings.json`) durch Ihren eigenen zu ersetzen! Sie können einen kostenlosen API-Schlüssel im [Google AI Studio](https://aistudio.google.com/u/0/apikey) erhalten.*
+*Wichtig: Vergessen Sie nicht, den API-Schlüssel in der Konfigurationsdatei `settings.json` durch Ihren eigenen zu ersetzen! Sie können einen kostenlosen API-Schlüssel im [Google AI Studio](https://aistudio.google.com/u/0/apikey) erhalten.*
 
 ## 💰 Völlig KOSTENLOS!
 
@@ -31,6 +31,10 @@ Mit 1.000 täglichen Anfragen können Sie Hunderte von Texten verarbeiten und In
 - 🆓 **Völlig kostenlos** – 1.000 Anfragen pro Tag ohne Kosten
 - 🔄 **Ultraschnelle Verarbeitung** – Ergebnisse für kurze Texte in Millisekunden und für längere Texte in Sekunden
 - ⌨️ **Hotkey-gesteuerter Arbeitsablauf** – Kein Wechsel zwischen Anwendungen erforderlich
+- ⚙️ **System-Tray-Integration** – Läuft unauffällig im Hintergrund.
+- 🚀 **Autostart mit Windows** – Startet ClipGen automatisch beim Hochfahren.
+- 🖥️ **Globaler Hotkey zum Anzeigen/Verstecken** – Greifen Sie von überall auf das Fenster zu.
+- ✏️ **Anpassbare Schriftgröße** – Passen Sie die Schriftgröße für eine bessere Lesbarkeit an.
 - 🧠 **KI-gestützte Operationen**:
   - Korrektur von Grammatik, Zeichensetzung und Rechtschreibung
   - Umformulierung und Verbesserung von Texten
@@ -83,10 +87,7 @@ Mit 1.000 täglichen Anfragen können Sie Hunderte von Texten verarbeiten und In
    - Ersetzen Sie den Platzhalter-API-Schlüssel durch Ihren eigenen:
      ```json
      {
-         "api_key": "YOUR_API_KEY_HERE",
-         "hotkeys": [
-             ...
-         ]
+         "api_key": "DEIN_API_SCHLÜSSEL_HIER"
      }
      ```
 
@@ -110,23 +111,25 @@ PyQt5
 
 ## 🔥 Wie man es benutzt
 
-1. **Starten Sie ClipGen** – Führen Sie die Anwendung aus, um sie im Hintergrund bereitzuhalten.
-2. **Wählen Sie Inhalte aus** – Bei Text einfach markieren (kein Kopieren nötig); bei Bildern einen Screenshot machen oder das Bild in die Zwischenablage kopieren.
-3. **Verwenden Sie Hotkeys** – Drücken Sie die entsprechende Tastenkombination, um eine Aktion auszuführen.
-4. **Sehen Sie die Ergebnisse** – Der verarbeitete Inhalt wird automatisch wieder eingefügt.
+1. **Starten Sie ClipGen** – Führen Sie die Anwendung aus. Sie wird in den System-Tray minimiert.
+2. **Fenster umschalten** – Verwenden Sie den globalen Hotkey (`Strg+Umschalt+C` standardmäßig) oder klicken Sie auf das Tray-Icon, um das Fenster anzuzeigen/zu verstecken.
+3. **Wählen Sie Inhalte aus** – Bei Text einfach markieren (kein Kopieren nötig); bei Bildern einen Screenshot machen oder das Bild in die Zwischenablage kopieren.
+4. **Verwenden Sie Hotkeys** – Drücken Sie die entsprechende Tastenkombination, um eine Aktion auszuführen.
+5. **Sehen Sie die Ergebnisse** – Der verarbeitete Inhalt wird automatisch wieder eingefügt.
 
 ### Hotkey-Referenz
 
-| Hotkey  | Funktion          | Beschreibung                                    |
-|---------|-------------------|-------------------------------------------------|
-| Strg+F1 | Korrektur         | Korrigiert Grammatik, Zeichensetzung und Rechtschreibung |
-| Strg+F2 | Umschreiben       | Verbessert die Klarheit und Lesbarkeit von Texten |
-| Strg+F3 | Übersetzung       | Übersetzt Text zwischen über 140 Sprachen      |
-| Strg+F6 | Erklärung         | Erklärt komplexe Konzepte in einfachen Worten   |
-| Strg+F7 | Antwort           | Beantwortet Fragen in der Zwischenablage        |
-| Strg+F8 | Eigene Anfrage    | Führt die angegebene Aufgabe aus                |
-| Strg+F9 | Kommentar         | Generiert humorvolle Kommentare                 |
-| Strg+F10| Bildanalyse       | Analysiert Bilder, extrahiert Text und erklärt Inhalte |
+| Hotkey | Funktion | Beschreibung |
+|--------|----------|-------------|
+| Strg+Umschalt+C (Standard) | Fenster anzeigen/verstecken | Schaltet die Sichtbarkeit des Hauptfensters um |
+| Strg+F1 | Korrektur | Korrigiert Grammatik, Zeichensetzung und Rechtschreibung |
+| Strg+F2 | Umschreiben | Verbessert die Klarheit und Lesbarkeit von Texten |
+| Strg+F3 | Übersetzung | Übersetzt Text zwischen über 140 Sprachen |
+| Strg+F6 | Erklärung | Erklärt komplexe Konzepte in einfachen Worten |
+| Strg+F7 | Antwort | Beantwortet Fragen in der Zwischenablage |
+| Strg+F8 | Eigene Anfrage | Führt die angegebene Aufgabe aus |
+| Strg+F9 | Kommentar | Generiert humorvolle Kommentare |
+| Strg+F10 | Bildanalyse | Analysiert Bilder, extrahiert Text und erklärt Inhalte |
 
 ## 💡 Anwendungsfälle
 
@@ -139,11 +142,14 @@ PyQt5
 
 ## ⚙️ Anpassung
 
-Sie können ClipGen umfassend anpassen, indem Sie die Konfigurationsdatei `settings.json` bearbeiten:
+Sie können ClipGen umfassend anpassen, indem Sie die Datei `settings.json` bearbeiten:
 
 ```json
 {
-    "api_key": "DEIN_API_SCHLÜSSEL",
+    "api_key": "DEIN_API_SCHLÜSSEL_HIER",
+    "autostart": false,
+    "show_hide_hotkey": "Ctrl+Shift+C",
+    "font_size": 10,
     "hotkeys": [
         {
             "combination": "Ctrl+F1",
@@ -157,10 +163,14 @@ Sie können ClipGen umfassend anpassen, indem Sie die Konfigurationsdatei `setti
 ```
 
 Jeder Aspekt kann angepasst werden:
-- `combination`: Die Tastenkombination
-- `name`: Anzeigename in der Benutzeroberfläche
-- `log_color`: Farbe im Anwendungsprotokoll
-- `prompt`: Die Anweisung, die an Gemini AI gesendet wird
+- `autostart`: Setzen Sie dies auf `true`, damit ClipGen beim Windows-Start gestartet wird.
+- `show_hide_hotkey`: Der globale Hotkey zum Anzeigen oder Verstecken des Anwendungsfensters.
+- `font_size`: Die Schriftgröße für den Log-Textbereich.
+- `hotkeys`: Passen Sie die KI-Aktionen an:
+  - `combination`: Die Tastenkombination.
+  - `name`: Anzeigename in der Benutzeroberfläche.
+  - `log_color`: Farbe im Anwendungsprotokoll.
+  - `prompt`: Die Anweisung, die an Gemini AI gesendet wird.
 
 ## 🚀 Warum ClipGen?
 

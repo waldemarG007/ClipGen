@@ -12,9 +12,8 @@ ClipGen is a powerful desktop utility that transforms how you interact with text
 **Speed is our priority** - ClipGen processes short texts in under 0.5 seconds and longer texts in just seconds, making it feel like a native part of your operating system rather than an external tool.
 
 ![ClipGen in action](screenshots/clipgen-demo.gif)
-<!-- ^ Add a screen recording showing how quickly you can copy text and transform it -->
 **[Download ClipGen here](http://vetaone.site/ClipGen/ClipGen.zip)**  
-*Important: Don’t forget to replace the API key in both configuration files (`config_en.json` and `config_ru.json`) with your own! You can get a free API key at [Google AI Studio](https://aistudio.google.com/u/0/apikey).*
+*Important: Don’t forget to replace the API key in the `settings.json` configuration file with your own! You can get a free API key at [Google AI Studio](https://aistudio.google.com/u/0/apikey).*
 
 ## 💰 Completely FREE to Use!
 
@@ -32,6 +31,10 @@ With 1,000 daily requests, you can process hundreds of texts and extract informa
 - 🆓 **Completely free** - 1,000 requests per day at no cost
 - 🔄 **Ultra-fast processing** - Get results for short texts in milliseconds and longer texts in seconds
 - ⌨️ **Hotkey-driven workflow** - No need to switch applications
+- ⚙️ **System Tray Integration** - Runs quietly in the background.
+- 🚀 **Autostart with Windows** - Launch ClipGen automatically on startup.
+- 🖥️ **Global Show/Hide Hotkey** - Access the window from anywhere.
+- ✏️ **Customizable Font Size** - Adjust the font size for better readability.
 - 🧠 **AI-powered operations**:
   - Grammar, punctuation, and spelling correction
   - Text rewriting and improvement
@@ -46,15 +49,12 @@ With 1,000 daily requests, you can process hundreds of texts and extract informa
 
 ### Main Interface
 ![Main Interface](screenshots/main-interface.png)
-<!-- ^ Add a screenshot of the main application window -->
 
 ### Grammar Correction Example
 ![Grammar Correction](screenshots/correction-example.png)
-<!-- ^ Add a before/after screenshot showing text correction -->
 
 ### Image Analysis Example
 ![Image Analysis](screenshots/image-analysis.png)
-<!-- ^ Add a screenshot showing image analysis functionality -->
 
 ## 🛠️ Installation
 
@@ -83,20 +83,17 @@ With 1,000 daily requests, you can process hundreds of texts and extract informa
    - You'll get 1,000 free requests per day with this key!
 
 4. **Configure ClipGen**
-   - Open `config_en.json` or `config_ru.json` in a text editor (depending on your preferred language)
+   - Open `settings.json` in a text editor.
    - Replace the placeholder API key with your own:
      ```json
      {
-         "api_key": "YOUR_API_KEY_HERE",
-         "hotkeys": [
-             ...
-         ]
+         "api_key": "YOUR_API_KEY_HERE"
      }
      ```
 
 5. **Run the application**
    ```
-   python main.py
+   python ClipGen.py
    ```
 
 ## 📋 Requirements
@@ -109,20 +106,22 @@ pyperclip
 google-generativeai
 pywin32
 pynput
-customtkinter
+PyQt5
 ```
 
 ## 🔥 How to Use
 
-1. **Start ClipGen** - Run the application to have it ready in the background
-2. **Select content** - For text, just select it (no need to copy); for images, take a screenshot or copy the image to clipboard
-3. **Use hotkeys** - Press the appropriate hotkey to perform an action
-4. **See results** - The processed content is automatically pasted back
+1. **Start ClipGen** - Run the application. It will minimize to the system tray.
+2. **Toggle Window** - Use the global hotkey (`Ctrl+Shift+C` by default) or click the tray icon to show/hide the window.
+3. **Select content** - For text, just select it (no need to copy); for images, take a screenshot or copy the image to clipboard.
+4. **Use hotkeys** - Press the appropriate hotkey to perform an action.
+5. **See results** - The processed content is automatically pasted back.
 
 ### Hotkey Reference
 
 | Hotkey | Function | Description |
 |--------|----------|-------------|
+| Ctrl+Shift+C (default) | Show/Hide Window | Toggles the visibility of the main application window |
 | Ctrl+F1 | Correction | Fixes grammar, punctuation, and spelling |
 | Ctrl+F2 | Rewrite | Improves text clarity and readability |
 | Ctrl+F3 | Translation | Translates text between any of 140+ languages |
@@ -143,17 +142,19 @@ customtkinter
 
 ## ⚙️ Customization
 
-You can customize ClipGen extensively by editing the configuration files:
+You can customize ClipGen extensively by editing the `settings.json` file:
 
 ```json
 {
-    "api_key": "YOUR_API_KEY",
+    "api_key": "YOUR_API_KEY_HERE",
+    "autostart": false,
+    "show_hide_hotkey": "Ctrl+Shift+C",
+    "font_size": 10,
     "hotkeys": [
         {
             "combination": "Ctrl+F1",
             "name": "Correction",
             "log_color": "#FFFFFF",
-            "description": ["Ctrl+F1: Correction", "normal", "Fixes grammar, punctuation, and spelling"],
             "prompt": "Please correct the following text..."
         },
         ...
@@ -161,18 +162,15 @@ You can customize ClipGen extensively by editing the configuration files:
 }
 ```
 
-ClipGen supports multiple languages and configurations:
-- Use `config_en.json` for English interface and prompts
-- Use `config_ru.json` for Russian interface and prompts
-- Create your own language file by duplicating and modifying these files
-- You can even use multiple API keys if you need more than 1,000 requests per day
-
 Each aspect can be customized:
-- `combination`: The keyboard shortcut
-- `name`: Display name in the UI
-- `log_color`: Color in the application log
-- `description`: Information shown in tooltips
-- `prompt`: The instruction sent to Gemini AI
+- `autostart`: Set to `true` to make ClipGen launch when Windows starts.
+- `show_hide_hotkey`: The global hotkey to show or hide the application window.
+- `font_size`: The font size for the log text area.
+- `hotkeys`: Customize the AI actions:
+  - `combination`: The keyboard shortcut.
+  - `name`: Display name in the UI.
+  - `log_color`: Color in the application log.
+  - `prompt`: The instruction sent to Gemini AI.
 
 ## 🚀 Why ClipGen?
 
@@ -225,4 +223,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🙏 Acknowledgements
 
 - [Google Generative AI](https://github.com/google/generative-ai-python) for the Gemini API and free tier access
-- [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) for the modern UI components
+- [PyQt5](https://riverbankcomputing.com/software/pyqt/intro) for the UI components
