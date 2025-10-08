@@ -10,6 +10,10 @@ import pyperclip
 from PIL import ImageGrab
 import google.generativeai as genai
 from google.generativeai import GenerationConfig
+from groq import Groq
+from mistralai.client import MistralClient
+from mistralai.models.chat_completion import ChatMessage
+import ollama
 import win32api
 import win32con
 from pynput import keyboard as pkb
@@ -34,7 +38,30 @@ logger.addHandler(console_handler)
 
 # Начальная конфигурация
 DEFAULT_CONFIG = {
-    "api_key": "YOUR_API_KEY_HERE",
+    "general": {
+        "provider": "gemini",
+        "autostart": False,
+        "show_hide_hotkey": "Ctrl+Shift+C",
+        "font_size": 10
+    },
+    "providers": {
+        "gemini": {
+            "api_key": "YOUR_GEMINI_API_KEY_HERE",
+            "model": "gemini-1.5-flash-latest"
+        },
+        "groq": {
+            "api_key": "YOUR_GROQ_API_KEY_HERE",
+            "model": "llama3-8b-8192"
+        },
+        "mistral": {
+            "api_key": "YOUR_MISTRAL_API_KEY_HERE",
+            "model": "mistral-small-latest"
+        },
+        "ollama": {
+            "host": "http://localhost:11434",
+            "model": "llama3"
+        }
+    },
     "hotkeys": [
         {"combination": "Ctrl+F1", "name": "Коррекция", "log_color": "#FFFFFF", "prompt": "Пожалуйста, исправь следующий текст..."},
         {"combination": "Ctrl+F2", "name": "Переписать", "log_color": "#A3BFFA", "prompt": "Пожалуйста, исправь следующий текст, если нужно..."},
@@ -44,10 +71,7 @@ DEFAULT_CONFIG = {
         {"combination": "Ctrl+F8", "name": "Просьба", "log_color": "#B5EAD7", "prompt": "Выполни просьбу пользователя..."},
         {"combination": "Ctrl+F9", "name": "Комментарий", "log_color": "#D6BCFA", "prompt": "Генерируй саркастичные комментарии..."},
         {"combination": "Ctrl+F10", "name": "Анализ изображения", "log_color": "#A1CFF9", "prompt": "Анализируй изображение..."}
-    ],
-    "autostart": False,
-    "show_hide_hotkey": "Ctrl+Shift+C",
-    "font_size": 10
+    ]
 }
 
 class ClipGen(ClipGenView):
@@ -58,8 +82,9 @@ class ClipGen(ClipGenView):
         # Инициализируем представление
         super().__init__()
         
-        # Инициализация Gemini
-        genai.configure(api_key=self.config["api_key"])
+        # Инициализация API клиентов
+        self.initialize_clients()
+
         self.queue = Queue()
         self.stop_event = threading.Event()
 
@@ -89,7 +114,7 @@ class ClipGen(ClipGenView):
         self.log_signal.emit("ClipGen запущен", "#FFFFFF")
         
         # Применяем размер шрифта при запуске
-        self.update_font_size(self.config.get("font_size", 10))
+        self.update_font_size(self.config["general"].get("font_size", 10))
 
     def setup_tray_icon(self):
         self.tray_icon = QSystemTrayIcon(self)
@@ -130,7 +155,7 @@ class ClipGen(ClipGenView):
             try:
                 # Проверяем, нажата ли наша комбинация для показать/скрыть
                 with pkb.GlobalHotKeys({
-                    self.config.get("show_hide_hotkey", "Ctrl+Shift+C"): self.toggle_visibility
+                    self.config["general"].get("show_hide_hotkey", "Ctrl+Shift+C"): self.toggle_visibility
                 }) as h:
                     h.join()
             except Exception as e:
@@ -138,7 +163,7 @@ class ClipGen(ClipGenView):
 
         # Запускаем listener в отдельном потоке
         listener = pkb.GlobalHotKeys({
-            self.config.get("show_hide_hotkey", "<ctrl>+<shift>+c"): self.toggle_visibility
+            self.config["general"].get("show_hide_hotkey", "<ctrl>+<shift>+c"): self.toggle_visibility
         })
         listener.start()
 
@@ -231,19 +256,78 @@ class ClipGen(ClipGenView):
         
         return LogHandler(self.log_signal, self.config["hotkeys"], self.config)
 
+    def initialize_clients(self):
+        """Инициализирует API клиенты на основе конфигурации."""
+        provider_config = self.config.get("providers", {})
+
+        # Gemini
+        gemini_config = provider_config.get("gemini", {})
+        if gemini_config.get("api_key") and gemini_config["api_key"] != "YOUR_GEMINI_API_KEY_HERE":
+            try:
+                genai.configure(api_key=gemini_config["api_key"])
+            except Exception as e:
+                logger.error(f"Failed to configure Gemini: {e}")
+
+        # Groq
+        groq_config = provider_config.get("groq", {})
+        try:
+            self.groq_client = Groq(api_key=groq_config.get("api_key")) if groq_config.get("api_key") and groq_config.get("api_key") != "YOUR_GROQ_API_KEY_HERE" else None
+        except Exception as e:
+            logger.error(f"Failed to initialize Groq: {e}")
+            self.groq_client = None
+
+        # Mistral
+        mistral_config = provider_config.get("mistral", {})
+        try:
+            self.mistral_client = MistralClient(api_key=mistral_config.get("api_key")) if mistral_config.get("api_key") and mistral_config.get("api_key") != "YOUR_MISTRAL_API_KEY_HERE" else None
+        except Exception as e:
+            logger.error(f"Failed to initialize Mistral: {e}")
+            self.mistral_client = None
+
+        # Ollama
+        ollama_config = provider_config.get("ollama", {})
+        try:
+            self.ollama_client = ollama.Client(host=ollama_config.get("host", "http://localhost:11434"))
+            self.ollama_client.list() # Test connection
+        except Exception:
+            logger.warning(f"Could not connect to Ollama at {ollama_config.get('host')}. Ollama will be unavailable.")
+            self.ollama_client = None
+
     def load_settings(self):
         try:
             with open("settings.json", "r", encoding="utf-8") as f:
-                self.config = json.load(f)
+                loaded_config = json.load(f)
         except FileNotFoundError:
             self.config = DEFAULT_CONFIG.copy()
             self.save_settings()
+            return
 
-        # Убедимся, что все новые ключи конфигурации присутствуют
-        for key, value in DEFAULT_CONFIG.items():
-            if key not in self.config:
-                self.config[key] = value
-        self.set_autostart(self.config.get("autostart", False))
+        # Migration from old format
+        if "api_key" in loaded_config:
+            logger.info("Old config format detected. Migrating to new format.")
+            new_config = DEFAULT_CONFIG.copy()
+            new_config["general"]["autostart"] = loaded_config.get("autostart", False)
+            new_config["general"]["show_hide_hotkey"] = loaded_config.get("show_hide_hotkey", "Ctrl+Shift+C")
+            new_config["general"]["font_size"] = loaded_config.get("font_size", 10)
+            new_config["providers"]["gemini"]["api_key"] = loaded_config.get("api_key", "YOUR_GEMINI_API_KEY_HERE")
+            new_config["hotkeys"] = loaded_config.get("hotkeys", DEFAULT_CONFIG["hotkeys"])
+            self.config = new_config
+            self.save_settings()
+            logger.info("Configuration migrated successfully.")
+        else:
+            self.config = loaded_config
+
+        # Ensure all keys are present (deep merge)
+        def deep_update(source, overrides):
+            for key, value in overrides.items():
+                if isinstance(value, dict):
+                    source[key] = deep_update(source.get(key, {}), value)
+                elif key not in source:
+                    source[key] = value
+            return source
+
+        self.config = deep_update(self.config, DEFAULT_CONFIG.copy())
+        self.set_autostart(self.config["general"].get("autostart", False))
 
 
     def save_settings(self):
@@ -257,10 +341,14 @@ class ClipGen(ClipGenView):
             if hasattr(handler, 'action_colors'):
                 handler.action_colors = {k["name"]: k["log_color"] for k in self.config["hotkeys"]}
 
-    def update_api_key(self, text):
-        self.config["api_key"] = text
-        genai.configure(api_key=text)
-        self.save_settings()
+    def update_provider_config(self, provider, key, value):
+        """Обновляет конфигурацию для конкретного провайдера."""
+        if provider in self.config["providers"]:
+            self.config["providers"][provider][key] = value
+            self.save_settings()
+            self.initialize_clients() # Re-initialize clients with new settings
+        else:
+            logger.error(f"Attempted to update config for unknown provider: {provider}")
 
     def update_prompt(self, hotkey, text):
         for h in self.config["hotkeys"]:
@@ -383,31 +471,132 @@ class ClipGen(ClipGenView):
             self.stop_event.wait()
             listener.stop()
 
-    def process_text_with_gemini(self, text, action, prompt, is_image=False):
+    def process_text(self, text, action, prompt, is_image=False):
+        provider = self.config["general"].get("provider", "gemini")
+        logger.info(f"Using provider: {provider}")
+
+        if provider == "gemini":
+            return self._process_gemini(text, action, prompt, is_image)
+        elif provider == "groq":
+            return self._process_groq(text, action, prompt, is_image)
+        elif provider == "mistral":
+            return self._process_mistral(text, action, prompt, is_image)
+        elif provider == "ollama":
+            return self._process_ollama(text, action, prompt, is_image)
+        else:
+            logger.error(f"Unknown provider: {provider}")
+            return ""
+
+    def _process_gemini(self, text, action, prompt, is_image):
         try:
-            # Находим hotkey для данного действия
             hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
             combo = hotkey["combination"] if hotkey else ""
-            
+            provider_config = self.config["providers"]["gemini"]
+            model_name = provider_config.get("model", "gemini-1.5-flash-latest")
+            model = genai.GenerativeModel(model_name)
+
             if is_image:
                 image = ImageGrab.grabclipboard()
                 if not image:
-                    logger.warning(f"[{combo}: {action}] Буфер обмена пуст")
+                    logger.warning(f"[{combo}: {action}] Clipboard is empty")
                     return ""
-                response = genai.GenerativeModel("models/gemini-2.0-flash-exp").generate_content(
-                    contents=[prompt, image], generation_config=GenerationConfig(temperature=0.7, max_output_tokens=2048)
-                )
+                contents = [prompt, image]
             else:
-                full_prompt = prompt + text
-                response = genai.GenerativeModel("models/gemini-2.0-flash-exp").generate_content(
-                    full_prompt, generation_config=GenerationConfig(temperature=0.7, max_output_tokens=2048)
-                )
+                contents = [prompt + text]
             
+            response = model.generate_content(contents, generation_config=GenerationConfig(temperature=0.7, max_output_tokens=2048))
             result = response.text.strip() if response and response.text else ""
             logger.info(f"[{combo}: {action}] Processed: {result}")
             return result
         except Exception as e:
-            logger.error(f"[{combo}: {action}] Ошибка при запросе к Gemini: {e}")
+            logger.error(f"Error with Gemini API: {e}")
+            return ""
+
+    def _process_groq(self, text, action, prompt, is_image):
+        if is_image:
+            logger.warning("Groq does not support image analysis. Please switch to another provider.")
+            return ""
+        if not self.groq_client:
+            logger.error("Groq client not initialized. Check your API key.")
+            return ""
+        try:
+            hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
+            combo = hotkey["combination"] if hotkey else ""
+            provider_config = self.config["providers"]["groq"]
+            model_name = provider_config.get("model", "llama3-8b-8192")
+
+            chat_completion = self.groq_client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": text},
+                ],
+                model=model_name,
+            )
+            result = chat_completion.choices[0].message.content
+            logger.info(f"[{combo}: {action}] Processed: {result}")
+            return result
+        except Exception as e:
+            logger.error(f"Error with Groq API: {e}")
+            return ""
+
+    def _process_mistral(self, text, action, prompt, is_image):
+        if is_image:
+            logger.warning("Mistral does not support image analysis. Please switch to another provider.")
+            return ""
+        if not self.mistral_client:
+            logger.error("Mistral client not initialized. Check your API key.")
+            return ""
+        try:
+            hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
+            combo = hotkey["combination"] if hotkey else ""
+            provider_config = self.config["providers"]["mistral"]
+            model_name = provider_config.get("model", "mistral-small-latest")
+
+            messages = [
+                ChatMessage(role="system", content=prompt),
+                ChatMessage(role="user", content=text)
+            ]
+            chat_response = self.mistral_client.chat(model=model_name, messages=messages)
+            result = chat_response.choices[0].message.content
+            logger.info(f"[{combo}: {action}] Processed: {result}")
+            return result
+        except Exception as e:
+            logger.error(f"Error with Mistral API: {e}")
+            return ""
+
+    def _process_ollama(self, text, action, prompt, is_image):
+        if not self.ollama_client:
+            logger.error("Ollama client not available. Check if Ollama is running.")
+            return ""
+        try:
+            hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
+            combo = hotkey["combination"] if hotkey else ""
+            provider_config = self.config["providers"]["ollama"]
+            model_name = provider_config.get("model", "llama3")
+
+            images = []
+            if is_image:
+                from io import BytesIO
+                image = ImageGrab.grabclipboard()
+                if not image:
+                    logger.warning(f"[{combo}: {action}] Clipboard is empty")
+                    return ""
+                # Convert PIL image to bytes
+                buffered = BytesIO()
+                image.save(buffered, format="PNG")
+                images = [buffered.getvalue()]
+
+            response = self.ollama_client.generate(
+                model=model_name,
+                prompt=f"{prompt}\n\n{text}",
+                images=images,
+                stream=False
+            )
+            result = response['response']
+            logger.info(f"[{combo}: {action}] Processed: {result}")
+            return result
+        except Exception as e:
+            logger.error(f"Error with Ollama: {e}")
             return ""
 
     def handle_text_operation(self, action, prompt):
@@ -429,7 +618,7 @@ class ClipGen(ClipGenView):
 
             is_image = action == "Анализ изображения"
             if is_image:
-                processed_text = self.process_text_with_gemini("", action, prompt, is_image=True)
+                processed_text = self.process_text("", action, prompt, is_image=True)
             else:
                 text = pyperclip.paste()
                 if not text.strip():
@@ -444,7 +633,7 @@ class ClipGen(ClipGenView):
                     if not text.strip():
                         logger.warning(f"[{combo}: {action}] Буфер обмена пуст после двух попыток копирования")
                         return
-                processed_text = self.process_text_with_gemini(text, action, prompt)
+                processed_text = self.process_text(text, action, prompt)
 
             if processed_text:
                 pyperclip.copy(processed_text)
@@ -504,12 +693,12 @@ class ClipGen(ClipGenView):
             logger.error(f"Ошибка при настройке автозапуска: {e}")
 
     def update_autostart(self, state):
-        self.config["autostart"] = bool(state)
-        self.set_autostart(self.config["autostart"])
+        self.config["general"]["autostart"] = bool(state)
+        self.set_autostart(self.config["general"]["autostart"])
         self.save_settings()
 
     def update_font_size(self, size):
-        self.config["font_size"] = size
+        self.config["general"]["font_size"] = size
         self.log_area.setStyleSheet(f"""
             background-color: #252525;
             color: #FFFFFF;
@@ -524,7 +713,7 @@ class ClipGen(ClipGenView):
         self.save_settings()
 
     def update_show_hide_hotkey(self, hotkey):
-        self.config["show_hide_hotkey"] = hotkey
+        self.config["general"]["show_hide_hotkey"] = hotkey
         # Перезапускаем глобальный listener
         # (Это может быть сложно, проще попросить перезапустить приложение)
         logger.warning("Для применения нового глобального хоткея перезапустите приложение.")
