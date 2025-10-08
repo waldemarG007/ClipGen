@@ -17,6 +17,9 @@ from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint
 from PyQt5.QtWidgets import QApplication
 import ctypes
 from ctypes import windll, c_bool, c_int, byref, POINTER, Structure
+import winreg
+from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
+from PyQt5.QtGui import QIcon
 from libs.ClipGen_view import ClipGenView
 
 # Настройка логирования
@@ -41,7 +44,10 @@ DEFAULT_CONFIG = {
         {"combination": "Ctrl+F8", "name": "Просьба", "log_color": "#B5EAD7", "prompt": "Выполни просьбу пользователя..."},
         {"combination": "Ctrl+F9", "name": "Комментарий", "log_color": "#D6BCFA", "prompt": "Генерируй саркастичные комментарии..."},
         {"combination": "Ctrl+F10", "name": "Анализ изображения", "log_color": "#A1CFF9", "prompt": "Анализируй изображение..."}
-    ]
+    ],
+    "autostart": False,
+    "show_hide_hotkey": "Ctrl+Shift+C",
+    "font_size": 10
 }
 
 class ClipGen(ClipGenView):
@@ -56,7 +62,10 @@ class ClipGen(ClipGenView):
         genai.configure(api_key=self.config["api_key"])
         self.queue = Queue()
         self.stop_event = threading.Event()
-        
+
+        # Настройка System Tray
+        self.setup_tray_icon()
+
         # Перехват горячих клавиш
         self.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
         self.key_states["ctrl"] = False
@@ -65,6 +74,10 @@ class ClipGen(ClipGenView):
         self.listener_thread = threading.Thread(target=self.hotkey_listener, args=(self.queue,), daemon=True)
         self.listener_thread.start()
         self.check_queue()
+
+        # Глобальный listener для показать/скрыть
+        self.global_hotkey_thread = threading.Thread(target=self.global_hotkey_listener, daemon=True)
+        self.global_hotkey_thread.start()
         
         # Настройка обработчика логов
         gui_handler = self.create_log_handler()
@@ -75,6 +88,60 @@ class ClipGen(ClipGenView):
         # Тестовое сообщение
         self.log_signal.emit("ClipGen запущен", "#FFFFFF")
         
+        # Применяем размер шрифта при запуске
+        self.update_font_size(self.config.get("font_size", 10))
+
+    def setup_tray_icon(self):
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(QIcon("ClipGen.ico"))
+
+        show_action = QAction("Показать", self)
+        quit_action = QAction("Выход", self)
+        show_action.triggered.connect(self.toggle_visibility)
+        quit_action.triggered.connect(self.quit_application)
+
+        tray_menu = QMenu()
+        tray_menu.addAction(show_action)
+        tray_menu.addAction(quit_action)
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.show()
+        self.tray_icon.activated.connect(self.on_tray_icon_activated)
+
+    def on_tray_icon_activated(self, reason):
+        if reason == QSystemTrayIcon.Trigger:  # Одиночный клик
+            self.toggle_visibility()
+
+    def toggle_visibility(self):
+        if self.isVisible():
+            self.hide()
+        else:
+            self.show()
+            self.activateWindow()
+
+    def quit_application(self):
+        self.stop_event.set()
+        if self.listener_thread.is_alive():
+            self.listener_thread.join(timeout=1.0)
+        QApplication.instance().quit()
+
+    def global_hotkey_listener(self):
+        # Этот listener будет проще, так как он отслеживает только одну комбинацию
+        def on_press(key):
+            try:
+                # Проверяем, нажата ли наша комбинация для показать/скрыть
+                with pkb.GlobalHotKeys({
+                    self.config.get("show_hide_hotkey", "Ctrl+Shift+C"): self.toggle_visibility
+                }) as h:
+                    h.join()
+            except Exception as e:
+                logger.error(f"Global hotkey error: {e}")
+
+        # Запускаем listener в отдельном потоке
+        listener = pkb.GlobalHotKeys({
+            self.config.get("show_hide_hotkey", "<ctrl>+<shift>+c"): self.toggle_visibility
+        })
+        listener.start()
+
     # В файле ClipGen.py замените метод create_log_handler следующим кодом:
 
     def create_log_handler(self):
@@ -171,6 +238,13 @@ class ClipGen(ClipGenView):
         except FileNotFoundError:
             self.config = DEFAULT_CONFIG.copy()
             self.save_settings()
+
+        # Убедимся, что все новые ключи конфигурации присутствуют
+        for key, value in DEFAULT_CONFIG.items():
+            if key not in self.config:
+                self.config[key] = value
+        self.set_autostart(self.config.get("autostart", False))
+
 
     def save_settings(self):
         with open("settings.json", "w", encoding="utf-8") as f:
@@ -401,13 +475,71 @@ class ClipGen(ClipGenView):
 
         threading.Thread(target=queue_worker, daemon=True).start()
 
-    def closeEvent(self, event):
+    def set_autostart(self, enable):
+        """Включает или отключает автозапуск приложения через реестр Windows."""
+        app_name = "ClipGen"
+        key = winreg.HKEY_CURRENT_USER
+        key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+
+        try:
+            registry_key = winreg.OpenKey(key, key_path, 0, winreg.KEY_WRITE)
+            if enable:
+                # Получаем путь к исполняемому файлу
+                app_path = os.path.realpath(sys.argv[0])
+                # Если это скрипт, нужно найти python.exe
+                if app_path.endswith(".py"):
+                    python_exe = sys.executable
+                    app_path = f'"{python_exe}" "{app_path}"'
+                winreg.SetValueEx(registry_key, app_name, 0, winreg.REG_SZ, app_path)
+            else:
+                winreg.DeleteValue(registry_key, app_name)
+            winreg.CloseKey(registry_key)
+        except FileNotFoundError:
+            # Если значение не найдено при удалении, это не ошибка
+            if not enable:
+                pass
+            else:
+                logger.error("Не удалось найти ключ реестра для автозапуска.")
+        except Exception as e:
+            logger.error(f"Ошибка при настройке автозапуска: {e}")
+
+    def update_autostart(self, state):
+        self.config["autostart"] = bool(state)
+        self.set_autostart(self.config["autostart"])
         self.save_settings()
-        self.stop_event.set()
-        if self.listener_thread.is_alive():
-            self.listener_thread.join(timeout=1.0)
-        event.accept()
-        os._exit(0)
+
+    def update_font_size(self, size):
+        self.config["font_size"] = size
+        self.log_area.setStyleSheet(f"""
+            background-color: #252525;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: {size}pt;
+            font-family: 'Consolas', 'Courier New', monospace;
+            selection-background-color: #A3BFFA;
+            selection-color: #1e1e1e;
+        """)
+        self.save_settings()
+
+    def update_show_hide_hotkey(self, hotkey):
+        self.config["show_hide_hotkey"] = hotkey
+        # Перезапускаем глобальный listener
+        # (Это может быть сложно, проще попросить перезапустить приложение)
+        logger.warning("Для применения нового глобального хоткея перезапустите приложение.")
+        self.save_settings()
+
+    def closeEvent(self, event):
+        if self.tray_icon.isVisible():
+            event.ignore()
+            self.hide()
+            self.tray_icon.showMessage(
+                "ClipGen",
+                "Приложение свернуто в трей.",
+                QIcon("ClipGen.ico"),
+                2000
+            )
 
 # Добавить новую функцию перед функцией main:
 def set_dark_titlebar(hwnd):

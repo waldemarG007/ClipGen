@@ -1,11 +1,11 @@
 import os
 import sys
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
-                          QTextBrowser, QTabWidget, QLineEdit, QTextEdit, QLabel, QScrollArea, 
+from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
+                          QTextBrowser, QTabWidget, QLineEdit, QTextEdit, QLabel, QScrollArea,
                           QFrame, QDialog, QColorDialog, QComboBox, QKeySequenceEdit, QMessageBox,
-                          QSizeGrip)
-from PyQt5.QtGui import QTextCursor, QColor, QIcon
+                          QSizeGrip, QCheckBox, QSpinBox)
+from PyQt5.QtGui import QTextCursor, QColor, QIcon, QFont
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint, QSize
 
 import pyperclip
@@ -345,6 +345,48 @@ class ClipGenView(QMainWindow):
         api_key_layout.addWidget(self.api_key_input)
 
         self.settings_layout.addWidget(api_key_container)
+
+        # Общие настройки
+        general_settings_container = QFrame()
+        general_settings_container.setStyleSheet("""
+            QFrame {
+                background-color: #252525;
+                border-radius: 15px;
+                padding: 10px;
+            }
+        """)
+        general_settings_layout = QVBoxLayout(general_settings_container)
+        general_settings_layout.setContentsMargins(15, 15, 15, 15)
+        general_settings_layout.setSpacing(10)
+
+        # Автозапуск
+        self.autostart_checkbox = QCheckBox("Запускать вместе с Windows")
+        self.autostart_checkbox.setChecked(self.config.get("autostart", False))
+        self.autostart_checkbox.stateChanged.connect(self.update_autostart)
+        general_settings_layout.addWidget(self.autostart_checkbox)
+
+        # Глобальная горячая клавиша
+        show_hide_layout = QHBoxLayout()
+        show_hide_label = QLabel("Горячая клавиша для Показать/Скрыть:")
+        self.show_hide_input = QLineEdit(self.config.get("show_hide_hotkey", "Ctrl+Shift+C"))
+        self.show_hide_input.textChanged.connect(self.update_show_hide_hotkey)
+        show_hide_layout.addWidget(show_hide_label)
+        show_hide_layout.addWidget(self.show_hide_input)
+        general_settings_layout.addLayout(show_hide_layout)
+
+        # Размер шрифта
+        font_size_layout = QHBoxLayout()
+        font_size_label = QLabel("Размер шрифта в логах:")
+        self.font_size_spinner = QSpinBox()
+        self.font_size_spinner.setRange(8, 24)
+        self.font_size_spinner.setValue(self.config.get("font_size", 10))
+        self.font_size_spinner.valueChanged.connect(self.update_font_size)
+        font_size_layout.addWidget(font_size_label)
+        font_size_layout.addWidget(self.font_size_spinner)
+        font_size_layout.addStretch()
+        general_settings_layout.addLayout(font_size_layout)
+
+        self.settings_layout.addWidget(general_settings_container)
 
         # Заголовок для горячих клавиш
         hotkeys_title = QLabel("Настройка горячих клавиш")
