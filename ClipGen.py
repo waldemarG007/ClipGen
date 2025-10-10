@@ -47,11 +47,11 @@ DEFAULT_CONFIG = {
     "providers": {
         "gemini": {
             "api_key": "YOUR_GEMINI_API_KEY_HERE",
-            "model": "gemini-1.5-flash-latest"
+            "model": "gemini-2.5-flash"
         },
         "groq": {
             "api_key": "YOUR_GROQ_API_KEY_HERE",
-            "model": "llama3-8b-8192"
+            "model": "groq/compound"
         },
         "mistral": {
             "api_key": "YOUR_MISTRAL_API_KEY_HERE",
