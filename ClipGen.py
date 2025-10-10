@@ -155,15 +155,43 @@ class ClipGen(ClipGenView):
             try:
                 # Проверяем, нажата ли наша комбинация для показать/скрыть
                 with pkb.GlobalHotKeys({
-                    self.config["general"].get("show_hide_hotkey", "Ctrl+Shift+C"): self.toggle_visibility
+                    self.config["general"].get("show_hide_hotkey", "<ctrl>+<shift>+c"): self.toggle_visibility
                 }) as h:
                     h.join()
             except Exception as e:
                 logger.error(f"Global hotkey error: {e}")
 
         # Запускаем listener в отдельном потоке
+        # Korrekte Syntax für pynput
+        hotkey_str = self.config["general"].get("show_hide_hotkey", "<ctrl>+<shift>+c")
+        
+        # Sicherstellen, dass der Hotkey im richtigen Format ist
+        if not hotkey_str.startswith("<"):
+            # Konvertiere von "Ctrl+Shift+C" zu "<ctrl>+<shift>+c"
+            hotkey_parts = hotkey_str.split("+")
+            hotkey_str = "+".join([f"<{part.lower()}>" for part in hotkey_parts])
+        else:
+            # Konvertiere "<ctrl>+<shift>+c" zu "<ctrl>+<shift>+c"
+            hotkey_parts = hotkey_str.split("+")
+            formatted_parts = []
+            for part in hotkey_parts:
+                if part.startswith("<") and part.endswith(">"):
+                    formatted_parts.append(part)
+                else:
+                    formatted_parts.append(f"<{part.lower()}>")
+            hotkey_str = "+".join(formatted_parts)
+            
+        # Spezielle Behandlung für den letzten Teil (Buchstabe)
+        hotkey_parts = hotkey_str.split("+")
+        if len(hotkey_parts) > 0:
+            last_part = hotkey_parts[-1]
+            if len(last_part) == 3 and last_part.startswith("<") and last_part.endswith(">") and last_part[1].isalpha():
+                # Ersetze "<c>" mit "c"
+                hotkey_parts[-1] = last_part[1]
+                hotkey_str = "+".join(hotkey_parts)
+        
         listener = pkb.GlobalHotKeys({
-            self.config["general"].get("show_hide_hotkey", "<ctrl>+<shift>+c"): self.toggle_visibility
+            hotkey_str: self.toggle_visibility
         })
         listener.start()
 

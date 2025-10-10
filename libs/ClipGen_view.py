@@ -337,6 +337,7 @@ class ClipGenView(QMainWindow):
         self.provider_combo = QComboBox()
         self.provider_combo.addItems(["gemini", "groq", "mistral", "ollama"])
         self.provider_combo.setCurrentText(self.config["general"].get("provider", "gemini"))
+        self.provider_combo.setStyleSheet("QComboBox { color: white; background-color: #333333; border-radius: 5px; padding: 3px; }")
         self.provider_combo.currentTextChanged.connect(self.update_provider_settings_ui)
         provider_layout.addWidget(self.provider_combo)
 
@@ -346,64 +347,124 @@ class ClipGenView(QMainWindow):
         # Gemini
         self.gemini_frame = QFrame()
         gemini_layout = QVBoxLayout(self.gemini_frame)
-        gemini_api_key = QLineEdit(self.config["providers"]["gemini"]["api_key"])
-        gemini_api_key.setPlaceholderText("Gemini API Key")
-        gemini_api_key.textChanged.connect(lambda text: self.update_provider_config("gemini", "api_key", text))
-        gemini_model = QLineEdit(self.config["providers"]["gemini"]["model"])
-        gemini_model.setPlaceholderText("Model Name")
-        gemini_model.textChanged.connect(lambda text: self.update_provider_config("gemini", "model", text))
+        self.gemini_api_key = QLineEdit(self.config["providers"]["gemini"]["api_key"])
+        self.gemini_api_key.setPlaceholderText("Gemini API Key")
+        self.gemini_model = QLineEdit(self.config["providers"]["gemini"]["model"])
+        self.gemini_model.setPlaceholderText("Model Name")
         gemini_layout.addWidget(QLabel("API Key:"))
-        gemini_layout.addWidget(gemini_api_key)
+        gemini_layout.addWidget(self.gemini_api_key)
         gemini_layout.addWidget(QLabel("Model:"))
-        gemini_layout.addWidget(gemini_model)
+        gemini_layout.addWidget(self.gemini_model)
+        
+        # Speicherbutton für Gemini
+        gemini_save_button = QPushButton("Speichern")
+        gemini_save_button.clicked.connect(lambda: self.save_provider_config("gemini"))
+        gemini_save_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3D8948;
+                color: white;
+                border-radius: 8px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: #2A6C34;
+            }
+        """)
+        gemini_layout.addWidget(gemini_save_button)
+        
         self.provider_settings_widgets["gemini"] = self.gemini_frame
         provider_layout.addWidget(self.gemini_frame)
 
         # Groq
         self.groq_frame = QFrame()
         groq_layout = QVBoxLayout(self.groq_frame)
-        groq_api_key = QLineEdit(self.config["providers"]["groq"]["api_key"])
-        groq_api_key.setPlaceholderText("Groq API Key")
-        groq_api_key.textChanged.connect(lambda text: self.update_provider_config("groq", "api_key", text))
-        groq_model = QLineEdit(self.config["providers"]["groq"]["model"])
-        groq_model.setPlaceholderText("Model Name")
-        groq_model.textChanged.connect(lambda text: self.update_provider_config("groq", "model", text))
+        self.groq_api_key = QLineEdit(self.config["providers"]["groq"]["api_key"])
+        self.groq_api_key.setPlaceholderText("Groq API Key")
+        self.groq_model = QLineEdit(self.config["providers"]["groq"]["model"])
+        self.groq_model.setPlaceholderText("Model Name")
         groq_layout.addWidget(QLabel("API Key:"))
-        groq_layout.addWidget(groq_api_key)
+        groq_layout.addWidget(self.groq_api_key)
         groq_layout.addWidget(QLabel("Model:"))
-        groq_layout.addWidget(groq_model)
+        groq_layout.addWidget(self.groq_model)
+        
+        # Speicherbutton für Groq
+        groq_save_button = QPushButton("Speichern")
+        groq_save_button.clicked.connect(lambda: self.save_provider_config("groq"))
+        groq_save_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3D8948;
+                color: white;
+                border-radius: 8px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: #2A6C34;
+            }
+        """)
+        groq_layout.addWidget(groq_save_button)
+        
         self.provider_settings_widgets["groq"] = self.groq_frame
         provider_layout.addWidget(self.groq_frame)
 
         # Mistral
         self.mistral_frame = QFrame()
         mistral_layout = QVBoxLayout(self.mistral_frame)
-        mistral_api_key = QLineEdit(self.config["providers"]["mistral"]["api_key"])
-        mistral_api_key.setPlaceholderText("Mistral API Key")
-        mistral_api_key.textChanged.connect(lambda text: self.update_provider_config("mistral", "api_key", text))
-        mistral_model = QLineEdit(self.config["providers"]["mistral"]["model"])
-        mistral_model.setPlaceholderText("Model Name")
-        mistral_model.textChanged.connect(lambda text: self.update_provider_config("mistral", "model", text))
+        self.mistral_api_key = QLineEdit(self.config["providers"]["mistral"]["api_key"])
+        self.mistral_api_key.setPlaceholderText("Mistral API Key")
+        self.mistral_model = QLineEdit(self.config["providers"]["mistral"]["model"])
+        self.mistral_model.setPlaceholderText("Model Name")
         mistral_layout.addWidget(QLabel("API Key:"))
-        mistral_layout.addWidget(mistral_api_key)
+        mistral_layout.addWidget(self.mistral_api_key)
         mistral_layout.addWidget(QLabel("Model:"))
-        mistral_layout.addWidget(mistral_model)
+        mistral_layout.addWidget(self.mistral_model)
+        
+        # Speicherbutton für Mistral
+        mistral_save_button = QPushButton("Speichern")
+        mistral_save_button.clicked.connect(lambda: self.save_provider_config("mistral"))
+        mistral_save_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3D8948;
+                color: white;
+                border-radius: 8px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: #2A6C34;
+            }
+        """)
+        mistral_layout.addWidget(mistral_save_button)
+        
         self.provider_settings_widgets["mistral"] = self.mistral_frame
         provider_layout.addWidget(self.mistral_frame)
 
         # Ollama
         self.ollama_frame = QFrame()
         ollama_layout = QVBoxLayout(self.ollama_frame)
-        ollama_host = QLineEdit(self.config["providers"]["ollama"]["host"])
-        ollama_host.setPlaceholderText("Ollama Host URL")
-        ollama_host.textChanged.connect(lambda text: self.update_provider_config("ollama", "host", text))
-        ollama_model = QLineEdit(self.config["providers"]["ollama"]["model"])
-        ollama_model.setPlaceholderText("Model Name")
-        ollama_model.textChanged.connect(lambda text: self.update_provider_config("ollama", "model", text))
+        self.ollama_host = QLineEdit(self.config["providers"]["ollama"]["host"])
+        self.ollama_host.setPlaceholderText("Ollama Host URL")
+        self.ollama_model = QLineEdit(self.config["providers"]["ollama"]["model"])
+        self.ollama_model.setPlaceholderText("Model Name")
         ollama_layout.addWidget(QLabel("Host URL:"))
-        ollama_layout.addWidget(ollama_host)
+        ollama_layout.addWidget(self.ollama_host)
         ollama_layout.addWidget(QLabel("Model:"))
-        ollama_layout.addWidget(ollama_model)
+        ollama_layout.addWidget(self.ollama_model)
+        
+        # Speicherbutton für Ollama
+        ollama_save_button = QPushButton("Speichern")
+        ollama_save_button.clicked.connect(lambda: self.save_provider_config("ollama"))
+        ollama_save_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3D8948;
+                color: white;
+                border-radius: 8px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: #2A6C34;
+            }
+        """)
+        ollama_layout.addWidget(ollama_save_button)
+        
         self.provider_settings_widgets["ollama"] = self.ollama_frame
         provider_layout.addWidget(self.ollama_frame)
 
@@ -426,6 +487,7 @@ class ClipGenView(QMainWindow):
         # Автозапуск
         self.autostart_checkbox = QCheckBox("Запускать вместе с Windows")
         self.autostart_checkbox.setChecked(self.config.get("autostart", False))
+        self.autostart_checkbox.setStyleSheet("QCheckBox { color: white; }")
         self.autostart_checkbox.stateChanged.connect(self.update_autostart)
         general_settings_layout.addWidget(self.autostart_checkbox)
 
@@ -620,6 +682,27 @@ class ClipGenView(QMainWindow):
         self.initialize_clients() # Re-initialize clients with new settings
         for name, widget in self.provider_settings_widgets.items():
             widget.setVisible(name == provider_name)
+            
+    def save_provider_config(self, provider):
+        """Speichert die Konfiguration für einen bestimmten Anbieter und zeigt eine Bestätigung an."""
+        if provider == "gemini":
+            self.config["providers"]["gemini"]["api_key"] = self.gemini_api_key.text()
+            self.config["providers"]["gemini"]["model"] = self.gemini_model.text()
+        elif provider == "groq":
+            self.config["providers"]["groq"]["api_key"] = self.groq_api_key.text()
+            self.config["providers"]["groq"]["model"] = self.groq_model.text()
+        elif provider == "mistral":
+            self.config["providers"]["mistral"]["api_key"] = self.mistral_api_key.text()
+            self.config["providers"]["mistral"]["model"] = self.mistral_model.text()
+        elif provider == "ollama":
+            self.config["providers"]["ollama"]["host"] = self.ollama_host.text()
+            self.config["providers"]["ollama"]["model"] = self.ollama_model.text()
+            
+        self.save_settings()
+        self.initialize_clients()
+        
+        # Zeige Bestätigungsmeldung
+        self.log_signal.emit(f"Einstellungen für {provider} wurden gespeichert", "#3D8948")
 
     def add_new_hotkey(self):
         # Создаем новую горячую клавишу
