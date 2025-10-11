@@ -63,13 +63,19 @@ ClipGen ist ein leistungsstarkes Desktop-Dienstprogramm, das die Art und Weise, 
    - Füllen Sie die erforderlichen Details (wie API-Schlüssel oder Modellnamen) für Ihren gewählten Anbieter aus.
 
 ### Anwendung ausführen und Autostart
-Sobald Sie die Anwendung konfiguriert haben, können Sie sie durch Ausführen des `ClipGen.py`-Skripts starten. Die Anwendung ist so konzipiert, dass sie in einem beliebigen Ordner auf Ihrem Computer abgelegt werden kann.
+Damit die Anwendung korrekt funktioniert, insbesondere die Autostart-Funktion, befolgen Sie bitte diese Schritte:
 
-Um ClipGen automatisch mit Windows zu starten, müssen Sie keine Verknüpfungen manuell in Systemordnern ablegen. Tun Sie einfach Folgendes:
-1. Starten Sie die Anwendung (`ClipGen.py`).
-2. Öffnen Sie das Hauptfenster (standardmäßig mit `Strg+Umschalt+C` oder durch Klicken auf das Tray-Icon).
-3. Gehen Sie zum Reiter "Einstellungen".
-4. Aktivieren Sie das Kontrollkästchen **"Mit Windows starten"**.
+1.  **Projektordner an einen festen Ort verschieben.** Bevor Sie die Anwendung zum ersten Mal ausführen, verschieben Sie den gesamten `ClipGen`-Ordner an einen Ort, an dem er dauerhaft verbleiben soll. Gute Beispiele sind `C:\Programme\ClipGen` oder `C:\Benutzer\IhrName\Anwendungen\ClipGen`.
+    > **Warnung:** Führen Sie die Anwendung nicht aus Ihrem `Downloads`-Ordner aus, wenn Sie die Autostart-Funktion verwenden möchten, da dieser Ordner möglicherweise verschoben oder geleert wird.
+
+2.  **Anwendung ausführen**, indem Sie `ClipGen.py` von seinem neuen, festen Speicherort aus starten.
+
+3.  **Autostart aktivieren (Optional).** Um ClipGen automatisch mit Windows zu starten:
+    - Öffnen Sie das Hauptfenster (standardmäßig mit `Strg+Umschalt+C` oder durch Klicken auf das Tray-Icon).
+    - Gehen Sie zum Reiter "Einstellungen".
+    - Aktivieren Sie das Kontrollkästchen **"Mit Windows starten"**.
+
+Die Anwendung registriert ihren aktuellen Pfad für den Autostart. Wenn Sie den Ordner verschieben, *nachdem* Sie diese Option aktiviert haben, kann sie nicht mehr gestartet werden. Sie müssen dann zu den Einstellungen zurückkehren, den Autostart deaktivieren und wieder aktivieren, um den Pfad zu aktualisieren.
 
 ## 📋 Anforderungen
 

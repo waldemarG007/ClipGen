@@ -63,13 +63,19 @@ ClipGen is a powerful desktop utility that transforms how you interact with text
    - Fill in the required details (like API keys or model names) for your chosen provider.
 
 ### Running the Application and Autostart
-Once you have configured the application, you can run it by executing the `ClipGen.py` script. The application is designed to be placed in any folder on your computer.
+For the application to work correctly, especially the autostart feature, please follow these steps:
 
-To have ClipGen start automatically with Windows, you don't need to manually place shortcuts in any system folders. Simply:
-1. Run the application (`ClipGen.py`).
-2. Open the main window (by default with `Ctrl+Shift+C` or by clicking the tray icon).
-3. Go to the "Settings" tab.
-4. Check the box labeled **"Start with Windows"**.
+1.  **Place the project folder in a permanent location.** Before running the application for the first time, move the entire `ClipGen` folder to a place where it will stay permanently. Good examples are `C:\Program Files\ClipGen` or `C:\Users\YourUser\Applications\ClipGen`.
+    > **Warning:** Do not run the application from your `Downloads` folder if you intend to use the autostart feature, as it may be moved or deleted.
+
+2.  **Run the application** by executing `ClipGen.py` from its new, permanent location.
+
+3.  **Enable Autostart (Optional).** To have ClipGen start automatically with Windows:
+    - Open the main window (by default with `Ctrl+Shift+C` or by clicking the tray icon).
+    - Go to the "Settings" tab.
+    - Check the box labeled **"Start with Windows"**.
+
+The application registers its current path for autostart. If you move the folder *after* enabling this option, it will fail to start. You will need to go back to the settings, disable and then re-enable the autostart option to update the path.
 
 ## 📋 Requirements
 
