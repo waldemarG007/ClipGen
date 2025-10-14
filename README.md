@@ -96,8 +96,38 @@ With 1,000 daily requests, you can process hundreds of texts and extract informa
 
 5. **Run the application**
    ```
-   python main.py
+   python ClipGen.py
    ```
+
+## 📦 Building from Source
+
+To create a standalone executable from the source code, you can use the provided build scripts. These scripts use `PyInstaller` to bundle the application and its dependencies into a single file.
+
+### Prerequisites
+
+- `PyInstaller`: Make sure you have PyInstaller installed (`pip install pyinstaller`).
+
+### Building on Windows
+
+1.  Open a command prompt in the project directory.
+2.  Run the `build.bat` script:
+    ```
+    build.bat
+    ```
+3.  The executable will be created in the `dist` directory.
+
+### Building on macOS and Linux
+
+1.  Open a terminal in the project directory.
+2.  Make the `build.sh` script executable:
+    ```
+    chmod +x build.sh
+    ```
+3.  Run the script:
+    ```
+    ./build.sh
+    ```
+4.  The executable will be created in the `dist` directory.
 
 ## 📋 Requirements
 
