@@ -101,46 +101,12 @@ With 1,000 daily requests, you can process hundreds of texts and extract informa
 
 ## 📦 Building from Source
 
-To create a standalone executable from the source code, you can use the provided build scripts. These scripts use `PyInstaller` to bundle the application and its dependencies into a single file.
+To create a standalone executable, run the appropriate build script for your operating system:
 
-### Prerequisites
+-   **Windows:** `build.bat`
+-   **macOS/Linux:** `chmod +x build.sh && ./build.sh`
 
-- `PyInstaller`: Make sure you have PyInstaller installed (`pip install pyinstaller`).
-
-### Building on Windows
-
-1.  Open a command prompt in the project directory.
-2.  Run the `build.bat` script:
-    ```
-    build.bat
-    ```
-3.  The executable will be created in the `dist` directory.
-
-### Building on macOS and Linux
-
-1.  Open a terminal in the project directory.
-2.  Make the `build.sh` script executable:
-    ```
-    chmod +x build.sh
-    ```
-3.  Run the script:
-    ```
-    ./build.sh
-    ```
-4.  The executable will be created in the `dist` directory.
-
-## 📋 Requirements
-
-Create a file named `requirements.txt` with the following content:
-
-```
-pillow
-pyperclip
-google-generativeai
-pywin32
-pynput
-customtkinter
-```
+The executable will be located in the `dist` directory.
 
 ## 🔥 How to Use
 

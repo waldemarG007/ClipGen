@@ -8,4 +8,4 @@
 
 - [x] **Dynamisches Neuladen der Hotkeys:** Änderungen an den Hotkeys in den Einstellungen werden sofort und ohne Neustart der Anwendung wirksam.
 - [x] **Erstellung einer Standalone-Anwendung:** Eine Anleitung und möglicherweise ein Skript, um mit `auto-py-to-exe` eine `.exe`-Datei zu erstellen.
-- [ ] **Vollständige Cross-Platform-Kompatibilität:** Sicherstellen, dass die Anwendung auf macOS und Linux lauffähig ist.
+- [x] **Vollständige Cross-Platform-Kompatibilität:** Sicherstellen, dass die Anwendung auf macOS und Linux lauffähig ist.

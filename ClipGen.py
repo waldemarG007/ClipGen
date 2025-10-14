@@ -13,6 +13,9 @@ from google.generativeai import GenerationConfig
 from pynput import keyboard as pkb
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint
 from PyQt5.QtWidgets import QApplication
+from groq import Groq
+from mistralai.client import MistralClient
+import ollama
 from libs.ClipGen_view import ClipGenView
 
 # Настройка логирования
@@ -47,9 +50,10 @@ class ClipGen(ClipGenView):
         
         # Инициализируем представление
         super().__init__(self)
+        self.setting_changed.connect(self.update_setting)
         
         # Инициализация Gemini
-        genai.configure(api_key=self.config["api_key"])
+        self.configure_ai_provider()
         self.queue = Queue()
         self.stop_event = threading.Event()
 
@@ -178,11 +182,6 @@ class ClipGen(ClipGenView):
         for handler in logger.handlers:
             if hasattr(handler, 'action_colors'):
                 handler.action_colors = {k["name"]: k["log_color"] for k in self.config["hotkeys"]}
-
-    def update_api_key(self, text):
-        self.config["api_key"] = text
-        genai.configure(api_key=text)
-        self.save_settings()
 
     def update_prompt(self, hotkey, text):
         for h in self.config["hotkeys"]:
@@ -316,7 +315,100 @@ class ClipGen(ClipGenView):
             self.stop_event.wait()
             listener.stop()
 
-    def process_text_with_gemini(self, text, action, prompt, is_image=False):
+    def update_setting(self, keys):
+        """Updates a nested setting in the config."""
+        value = keys.pop()
+        d = self.config
+        for key in keys[:-1]:
+            d = d.setdefault(key, {})
+        d[keys[-1]] = value
+        self.save_settings()
+        self.configure_ai_provider()
+
+    def configure_ai_provider(self):
+        provider = self.config.get("general", {}).get("provider", "Gemini")
+
+        if provider == "Gemini":
+            api_key = self.config.get("providers", {}).get("gemini", {}).get("api_key")
+            if api_key:
+                genai.configure(api_key=api_key)
+        elif provider == "Groq":
+            api_key = self.config.get("providers", {}).get("groq", {}).get("api_key")
+            self.groq_client = Groq(api_key=api_key)
+        elif provider == "Mistral":
+            api_key = self.config.get("providers", {}).get("mistral", {}).get("api_key")
+            self.mistral_client = MistralClient(api_key=api_key)
+        elif provider == "Ollama":
+            host = self.config.get("providers", {}).get("ollama", {}).get("host", "http://localhost:11434")
+            self.ollama_client = ollama.Client(host=host)
+
+    def process_text(self, text, action, prompt, is_image=False):
+        provider = self.config.get("general", {}).get("provider", "Gemini")
+        try:
+            if provider == "Gemini":
+                return self._process_gemini(text, action, prompt, is_image)
+            elif provider == "Groq":
+                return self._process_groq(text, action, prompt)
+            elif provider == "Mistral":
+                return self._process_mistral(text, action, prompt)
+            elif provider == "Ollama":
+                return self._process_ollama(text, action, prompt, is_image)
+            else:
+                logger.error(f"Unknown provider: {provider}")
+                return ""
+        except Exception as e:
+            logger.error(f"Error processing text with {provider}: {e}")
+            return ""
+
+    def _process_groq(self, text, action, prompt):
+        hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
+        combo = hotkey["combination"] if hotkey else ""
+        full_prompt = prompt + text
+        chat_completion = self.groq_client.chat.completions.create(
+            messages=[{"role": "user", "content": full_prompt}],
+            model=self.config.get("providers", {}).get("groq", {}).get("model", "llama3-8b-8192"),
+        )
+        result = chat_completion.choices[0].message.content
+        logger.info(f"[{combo}: {action}] Processed: {result}")
+        return result
+
+    def _process_mistral(self, text, action, prompt):
+        hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
+        combo = hotkey["combination"] if hotkey else ""
+        full_prompt = prompt + text
+        messages = [{"role": "user", "content": full_prompt}]
+        chat_response = self.mistral_client.chat(
+            model=self.config.get("providers", {}).get("mistral", {}).get("model", "mistral-large-latest"),
+            messages=messages,
+        )
+        result = chat_response.choices[0].message.content
+        logger.info(f"[{combo}: {action}] Processed: {result}")
+        return result
+
+    def _process_ollama(self, text, action, prompt, is_image=False):
+        hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
+        combo = hotkey["combination"] if hotkey else ""
+        full_prompt = prompt + text
+
+        request_data = {
+            "model": self.config.get("providers", {}).get("ollama", {}).get("model", "llama3"),
+            "prompt": full_prompt,
+            "stream": False
+        }
+
+        if is_image:
+            image = ImageGrab.grabclipboard()
+            if not image:
+                logger.warning(f"[{combo}: {action}] Clipboard is empty")
+                return ""
+            request_data["images"] = [image]
+
+        response = self.ollama_client.generate(**request_data)
+        result = response['response']
+        logger.info(f"[{combo}: {action}] Processed: {result}")
+        return result
+
+    def _process_gemini(self, text, action, prompt, is_image=False):
         try:
             # Находим hotkey для данного действия
             hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
@@ -360,7 +452,7 @@ class ClipGen(ClipGenView):
 
             is_image = action == "Анализ изображения"
             if is_image:
-                processed_text = self.process_text_with_gemini("", action, prompt, is_image=True)
+                processed_text = self.process_text("", action, prompt, is_image=True)
             else:
                 text = pyperclip.paste()
                 if not text.strip():
@@ -373,7 +465,7 @@ class ClipGen(ClipGenView):
                     if not text.strip():
                         logger.warning(f"[{combo}: {action}] Буфер обмена пуст после двух попыток копирования")
                         return
-                processed_text = self.process_text_with_gemini(text, action, prompt)
+                processed_text = self.process_text(text, action, prompt)
 
             if processed_text:
                 pyperclip.copy(processed_text)

@@ -4,7 +4,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                           QTextBrowser, QTabWidget, QLineEdit, QTextEdit, QLabel, QScrollArea,
                           QFrame, QDialog, QColorDialog, QComboBox, QKeySequenceEdit, QMessageBox,
-                          QSizeGrip)
+                          QSizeGrip, QStackedLayout)
 from PyQt5.QtGui import QTextCursor, QColor, QIcon
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint, QSize
 
@@ -12,6 +12,7 @@ import pyperclip
 
 class ClipGenView(QMainWindow):
     log_signal = pyqtSignal(str, str)  # Сигнал для логирования: сообщение, цвет
+    setting_changed = pyqtSignal(list)
 
     def __init__(self, controller):
         super().__init__()
@@ -342,6 +343,9 @@ class ClipGenView(QMainWindow):
             }
         """)
         self.provider_combo.currentIndexChanged.connect(self._update_ui_for_provider)
+        self.provider_combo.currentTextChanged.connect(
+            lambda text: self.setting_changed.emit(["general", "provider", text])
+        )
         provider_layout.addWidget(self.provider_combo)
         self.settings_layout.addWidget(provider_container)
 
@@ -397,6 +401,29 @@ class ClipGenView(QMainWindow):
         self.provider_settings_layout.addWidget(ollama_frame)
         self.provider_settings_frames["Ollama"] = ollama_frame
 
+        # Connect signals for provider settings
+        self.gemini_api_key_input.textChanged.connect(
+            lambda text: self.setting_changed.emit(["providers", "gemini", "api_key", text])
+        )
+        self.groq_api_key_input.textChanged.connect(
+            lambda text: self.setting_changed.emit(["providers", "groq", "api_key", text])
+        )
+        self.groq_model_input.textChanged.connect(
+            lambda text: self.setting_changed.emit(["providers", "groq", "model", text])
+        )
+        self.mistral_api_key_input.textChanged.connect(
+            lambda text: self.setting_changed.emit(["providers", "mistral", "api_key", text])
+        )
+        self.mistral_model_input.textChanged.connect(
+            lambda text: self.setting_changed.emit(["providers", "mistral", "model", text])
+        )
+        self.ollama_host_input.textChanged.connect(
+            lambda text: self.setting_changed.emit(["providers", "ollama", "host", text])
+        )
+        self.ollama_model_input.textChanged.connect(
+            lambda text: self.setting_changed.emit(["providers", "ollama", "model", text])
+        )
+
         # Set initial state
         current_provider = self.config.get("general", {}).get("provider", "Gemini")
         self.provider_combo.setCurrentText(current_provider)
@@ -404,24 +431,16 @@ class ClipGenView(QMainWindow):
 
     def _update_ui_for_provider(self):
         selected_provider = self.provider_combo.currentText()
-        print(f"Selected provider: {selected_provider}")
-        if selected_provider in self.provider_settings_frames:
-            self.provider_settings_layout.setCurrentWidget(self.provider_settings_frames[selected_provider])
 
         # Enable/disable image analysis hotkey
         vision_providers = ["Gemini", "Ollama"]
         image_hotkey_name = "Анализ изображения"
 
-        print(f"Buttons: {self.buttons.keys()}")
         for hotkey in self.config["hotkeys"]:
             if hotkey["name"] == image_hotkey_name:
                 hotkey_combo = hotkey["combination"]
-                print(f"Found image hotkey: {hotkey_combo}")
                 if hotkey_combo in self.buttons:
-                    print(f"Setting enabled state for {hotkey_combo} to {selected_provider in vision_providers}")
                     self.buttons[hotkey_combo].setEnabled(selected_provider in vision_providers)
-                else:
-                    print(f"Button for {hotkey_combo} not found")
                 break
 
         # Заголовок для горячих клавиш
@@ -604,14 +623,13 @@ class ClipGenView(QMainWindow):
         self.reload_settings_tab()
         
         # Обновляем key_states для отслеживания новой комбинации
-        self.controller.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
-        self.controller.key_states["ctrl"] = False
-        self.controller.key_states["alt"] = False
-        self.controller.key_states["shift"] = False
+        self.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
+        self.key_states["ctrl"] = False
+        self.key_states["alt"] = False
+        self.key_states["shift"] = False
         
         # Сохраняем настройки
-        self.controller.save_settings()
-        self.controller.restart_hotkey_listener()
+        self.save_settings()
         
         # Обновляем обработчик логов с новыми цветами
         #for handler in logger.handlers:
@@ -674,14 +692,13 @@ class ClipGenView(QMainWindow):
             self.reload_settings_tab()
             
             # Обновляем key_states
-            self.controller.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
-            self.controller.key_states["ctrl"] = False
-            self.controller.key_states["alt"] = False
-            self.controller.key_states["shift"] = False
+            self.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
+            self.key_states["ctrl"] = False
+            self.key_states["alt"] = False
+            self.key_states["shift"] = False
             
             # Сохраняем настройки
-            self.controller.save_settings()
-            self.controller.restart_hotkey_listener()
+            self.save_settings()
 
     def apply_styles(self):
         self.setStyleSheet("""
