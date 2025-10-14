@@ -13,8 +13,10 @@ import pyperclip
 class ClipGenView(QMainWindow):
     log_signal = pyqtSignal(str, str)  # Сигнал для логирования: сообщение, цвет
 
-    def __init__(self):
+    def __init__(self, controller):
         super().__init__()
+        self.controller = controller
+        self.config = controller.config
         # Установка иконки
         icon_path = os.path.abspath("ClipGen.ico")
         if os.path.exists(icon_path):
@@ -602,13 +604,14 @@ class ClipGenView(QMainWindow):
         self.reload_settings_tab()
         
         # Обновляем key_states для отслеживания новой комбинации
-        self.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
-        self.key_states["ctrl"] = False
-        self.key_states["alt"] = False
-        self.key_states["shift"] = False
+        self.controller.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
+        self.controller.key_states["ctrl"] = False
+        self.controller.key_states["alt"] = False
+        self.controller.key_states["shift"] = False
         
         # Сохраняем настройки
-        self.save_settings()
+        self.controller.save_settings()
+        self.controller.restart_hotkey_listener()
         
         # Обновляем обработчик логов с новыми цветами
         #for handler in logger.handlers:
@@ -671,13 +674,14 @@ class ClipGenView(QMainWindow):
             self.reload_settings_tab()
             
             # Обновляем key_states
-            self.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
-            self.key_states["ctrl"] = False
-            self.key_states["alt"] = False
-            self.key_states["shift"] = False
+            self.controller.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
+            self.controller.key_states["ctrl"] = False
+            self.controller.key_states["alt"] = False
+            self.controller.key_states["shift"] = False
             
             # Сохраняем настройки
-            self.save_settings()
+            self.controller.save_settings()
+            self.controller.restart_hotkey_listener()
 
     def apply_styles(self):
         self.setStyleSheet("""

@@ -48,7 +48,7 @@ class ClipGen(ClipGenView):
         self.load_settings()
         
         # Инициализируем представление
-        super().__init__()
+        super().__init__(self)
         
         # Инициализация Gemini
         genai.configure(api_key=self.config["api_key"])
@@ -192,6 +192,7 @@ class ClipGen(ClipGenView):
                 h["prompt"] = text
                 break
         self.save_settings()
+        self.restart_hotkey_listener()
 
     def update_name(self, hotkey, text):
         for h in self.config["hotkeys"]:
@@ -202,6 +203,7 @@ class ClipGen(ClipGenView):
                 self.update_logger_colors()
                 break
         self.save_settings()
+        self.restart_hotkey_listener()
 
     # В файле ClipGen.py, изменим метод update_color:
 
@@ -216,6 +218,7 @@ class ClipGen(ClipGenView):
                 
                 break
         self.save_settings()
+        self.restart_hotkey_listener()
         
     def update_hotkey(self, old_combo, new_combo):
         for h in self.config["hotkeys"]:
@@ -228,6 +231,14 @@ class ClipGen(ClipGenView):
                 self.update_buttons()
                 break
         self.save_settings()
+        self.restart_hotkey_listener()
+
+    def restart_hotkey_listener(self):
+        self.stop_event.set()
+        self.listener_thread.join()
+        self.stop_event = threading.Event()
+        self.listener_thread = threading.Thread(target=self.hotkey_listener, args=(self.queue,), daemon=True)
+        self.listener_thread.start()
 
     def hotkey_listener(self, queue):
         def on_press(key, queue):
