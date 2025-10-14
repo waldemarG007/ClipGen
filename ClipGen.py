@@ -13,8 +13,6 @@ from google.generativeai import GenerationConfig
 from pynput import keyboard as pkb
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint
 from PyQt5.QtWidgets import QApplication
-import ctypes
-from ctypes import windll, c_bool, c_int, byref, POINTER, Structure
 from libs.ClipGen_view import ClipGenView
 
 # Настройка логирования
@@ -381,11 +379,9 @@ class ClipGen(ClipGenView):
                 pyperclip.copy(processed_text)
 
                 time.sleep(0.3)
-                win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
-                win32api.keybd_event(ord('V'), 0, 0, 0)
-                time.sleep(0.2)
-                win32api.keybd_event(ord('V'), 0, win32con.KEYEVENTF_KEYUP, 0)
-                win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
+                with self.keyboard.pressed(Key.ctrl):
+                    self.keyboard.press('v')
+                    self.keyboard.release('v')
         except Exception as e:
             logger.error(f"[{combo}: {action}] Ошибка: {e}")
 
