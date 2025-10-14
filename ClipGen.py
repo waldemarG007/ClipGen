@@ -10,12 +10,11 @@ import pyperclip
 from PIL import ImageGrab
 import google.generativeai as genai
 from google.generativeai import GenerationConfig
-from pynput.keyboard import Controller, Key
 from pynput import keyboard as pkb
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
-from PyQt5.QtGui import QIcon
+import ctypes
+from ctypes import windll, c_bool, c_int, byref, POINTER, Structure
 from libs.ClipGen_view import ClipGenView
 
 # Настройка логирования
@@ -55,7 +54,6 @@ class ClipGen(ClipGenView):
         genai.configure(api_key=self.config["api_key"])
         self.queue = Queue()
         self.stop_event = threading.Event()
-        self.keyboard = Controller()
 
         # Перехват горячих клавиш
         self.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
@@ -75,35 +73,6 @@ class ClipGen(ClipGenView):
         # Тестовое сообщение
         self.log_signal.emit("ClipGen запущен", "#FFFFFF")
         
-        # Tray Icon setup
-        try:
-            icon = QIcon("ClipGen.ico")
-            self.tray_icon = QSystemTrayIcon(icon, self)
-
-            # Create a menu for the tray icon
-            tray_menu = QMenu()
-
-            # Action to show/hide the main window
-            self.toggle_visibility_action = QAction("Показать/Скрыть", self)
-            self.toggle_visibility_action.triggered.connect(self.toggle_visibility)
-            tray_menu.addAction(self.toggle_visibility_action)
-
-            # Action to open settings
-            settings_action = QAction("Настройки", self)
-            settings_action.triggered.connect(self.show_settings_from_tray)
-            tray_menu.addAction(settings_action)
-
-            # Action to exit the application
-            exit_action = QAction("Выход", self)
-            exit_action.triggered.connect(self.close)
-            tray_menu.addAction(exit_action)
-
-            self.tray_icon.setContextMenu(tray_menu)
-            self.tray_icon.show()
-        except Exception as e:
-            logger.error(f"Could not create tray icon: {e}")
-            self.tray_icon = None
-
     # В файле ClipGen.py замените метод create_log_handler следующим кодом:
 
     def create_log_handler(self):
@@ -192,18 +161,6 @@ class ClipGen(ClipGenView):
                     print(f"Ошибка в обработчике логов: {e}")
         
         return LogHandler(self.log_signal, self.config["hotkeys"], self.config)
-
-    def toggle_visibility(self):
-        if self.isVisible():
-            self.hide()
-        else:
-            self.show()
-
-    def show_settings_from_tray(self):
-        self.show_settings()
-        self.show()
-        self.raise_()
-        self.activateWindow()
 
     def load_settings(self):
         try:
@@ -406,7 +363,6 @@ class ClipGen(ClipGenView):
                     text = pyperclip.paste()
                     if not text.strip():
                         logger.warning(f"[{combo}: {action}] Буфер обмена пуст после двух попыток копирования")
-                        if self.tray_icon: self.tray_icon.showMessage("ClipGen", f"Действие '{action}' не выполнено: Буфер обмена пуст.", QSystemTrayIcon.Warning, 3000)
                         return
                 processed_text = self.process_text_with_gemini(text, action, prompt)
 
@@ -414,15 +370,13 @@ class ClipGen(ClipGenView):
                 pyperclip.copy(processed_text)
 
                 time.sleep(0.3)
-                with self.keyboard.pressed(Key.ctrl):
-                    self.keyboard.press('v')
-                    self.keyboard.release('v')
-                if self.tray_icon: self.tray_icon.showMessage("ClipGen", f"Действие '{action}' выполнено успешно!", self.windowIcon(), 2000)
-            else:
-                if self.tray_icon: self.tray_icon.showMessage("ClipGen", f"Действие '{action}' не удалось. Подробности в логах.", QSystemTrayIcon.Warning, 3000)
+                win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
+                win32api.keybd_event(ord('V'), 0, 0, 0)
+                time.sleep(0.2)
+                win32api.keybd_event(ord('V'), 0, win32con.KEYEVENTF_KEYUP, 0)
+                win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
         except Exception as e:
             logger.error(f"[{combo}: {action}] Ошибка: {e}")
-            if self.tray_icon: self.tray_icon.showMessage("ClipGen", f"Ошибка в '{action}': {e}", QSystemTrayIcon.Warning, 3000)
 
     def check_queue(self):
         def queue_worker():
@@ -449,24 +403,8 @@ class ClipGen(ClipGenView):
         event.accept()
         os._exit(0)
 
-def set_dark_titlebar(hwnd):
-    """Sets the dark theme for the standard Windows title bar."""
-    if sys.platform != "win32":
-        return
-    try:
-        import ctypes
-        from ctypes import windll, c_int, byref
-        DWMWA_USE_IMMERSIVE_DARK_MODE = 20
-        windll.dwmapi.DwmSetWindowAttribute(
-            hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, 
-            byref(c_int(1)), ctypes.sizeof(c_int)
-        )
-    except Exception as e:
-        print(f"Failed to set dark theme for title bar: {e}")
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = ClipGen()
-    set_dark_titlebar(int(window.winId()))
     window.show()
     sys.exit(app.exec_())
