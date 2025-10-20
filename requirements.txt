@@ -4,6 +4,3 @@ google-generativeai==0.8.4
 pywin32==310
 pynput==1.8.0
 Pillow==11.1.0
-groq==0.9.0
-mistralai==0.4.1
-ollama==0.3.0
