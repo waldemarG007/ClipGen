@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+View-Komponente für die ClipGen-Anwendung.
+
+Diese Datei definiert die grafische Benutzeroberfläche (GUI) der Anwendung mit PyQt5.
+Sie ist verantwortlich für die Darstellung aller Fenster, Schaltflächen, Tabs und
+Eingabefelder und kommuniziert über Signale mit dem Controller (`ClipGen.py`).
+"""
 import os
 import sys
 from PyQt5.QtGui import QIcon
@@ -11,115 +19,114 @@ from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint, QSize
 import pyperclip
 
 class ClipGenView(QMainWindow):
-    log_signal = pyqtSignal(str, str)  # Сигнал для логирования: сообщение, цвет
+    log_signal = pyqtSignal(str, str)  # Signal für die Protokollierung: Nachricht, Farbe
     setting_changed = pyqtSignal(list)
 
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
         self.config = controller.config
-        # Установка иконки
+        # Icon setzen
         icon_path = os.path.abspath("ClipGen.ico")
         if os.path.exists(icon_path):
             app_icon = QIcon(icon_path)
             self.setWindowIcon(app_icon)
-            # Устанавливаем иконку для всего приложения
+            # Icon für die gesamte Anwendung setzen
             from PyQt5.QtWidgets import QApplication
             QApplication.instance().setWindowIcon(app_icon)
         else:
-            print(f"Иконка не найдена по пути: {icon_path}")
+            print(f"Icon unter dem Pfad nicht gefunden: {icon_path}")
         self.setWindowTitle("ClipGen")
         self.setGeometry(100, 100, 554, 632)
         self.setMinimumSize(300, 200)
 
-        # Установка иконки приложения
+        # Anwendungsicon setzen
         icon_path = "ClipGen.ico"
         if getattr(sys, 'frozen', False):
-            # Запущено как скомпилированное приложение
+            # Als kompilierte Anwendung gestartet
             icon_path = os.path.join(sys._MEIPASS, "ClipGen.ico")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 
-        # Добавляем ручки для изменения размера окна
+        # Griffe zum Ändern der Fenstergröße hinzufügen
         self.add_resize_grips()
-        
-        # Применяем стили
+
+        # Stile anwenden
         self.apply_styles()
-        
-        # Изменяем флаги окна, чтобы разрешить растягивание
+
+        # Fensterflags ändern, um Größenänderung zu ermöglichen
         self.setWindowFlags(Qt.Window)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        
-        # Переменные для перетаскивания и изменения размера окна
+
+        # Variablen zum Ziehen und Ändern der Fenstergröße
         self.old_pos = None
         self.resizing = False
         self.resize_edge = None
 
-        # Основной виджет
+        # Haupt-Widget
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout = QVBoxLayout(self.central_widget)
         self.layout.setContentsMargins(10, 10, 10, 10)
         self.layout.setSpacing(0)
 
-        # Создание элементов интерфейса
-        #self.setup_title_bar()
+        # UI-Elemente erstellen
         self.setup_buttons()
         self.setup_tabs()
-        
-        # Логи с цветами через сигналы
+
+        # Protokolle mit Farben über Signale
         self.log_signal.connect(self.append_log)
-        
-        # Обновление кнопок при изменении размера
+
+        # Buttons bei Größenänderung aktualisieren
         self.resize_timer = QTimer()
         self.resize_timer.setSingleShot(True)
         self.resize_timer.timeout.connect(self.update_buttons)
         self.resizeEvent = self.on_resize
-        
-        # Применяем стили
+
+        # Stile anwenden
         self.apply_styles()
 
     def add_resize_grips(self):
-        """Добавляет ручки для изменения размера окна в четырех углах"""
-        # Создаем ручки для изменения размера
+        """Fügt Griffe zum Ändern der Fenstergröße an den vier Ecken hinzu."""
+        # Griffe zum Ändern der Größe erstellen
         self.grip_bottom_right = QSizeGrip(self)
         self.grip_bottom_left = QSizeGrip(self)
         self.grip_top_right = QSizeGrip(self)
         self.grip_top_left = QSizeGrip(self)
-        
-        # Устанавливаем позиции
+
+        # Positionen festlegen
         self.grip_bottom_right.setGeometry(self.width() - 20, self.height() - 20, 20, 20)
         self.grip_bottom_left.setGeometry(0, self.height() - 20, 20, 20)
         self.grip_top_right.setGeometry(self.width() - 20, 0, 20, 20)
         self.grip_top_left.setGeometry(0, 0, 20, 20)
-        
-        # Показываем ручки
+
+        # Griffe anzeigen
         self.grip_bottom_right.show()
         self.grip_bottom_left.show()
         self.grip_top_right.show()
         self.grip_top_left.show()
-        
-        # Добавляем стиль для ручек (чтобы они были прозрачными, но функциональными)
+
+        # Stil für die Griffe hinzufügen (damit sie transparent, aber funktional sind)
         self.grip_bottom_right.setStyleSheet("background: transparent;")
         self.grip_bottom_left.setStyleSheet("background: transparent;")
         self.grip_top_right.setStyleSheet("background: transparent;")
         self.grip_top_left.setStyleSheet("background: transparent;")
 
-    # Переопределяем метод resizeEvent для обновления положения ручек
     def resizeEvent(self, event):
-        # Обновляем положение ручек для изменения размера
+        """resizeEvent-Methode überschreiben, um die Position der Griffe zu aktualisieren."""
+        # Position der Griffe zum Ändern der Größe aktualisieren
         self.grip_bottom_right.setGeometry(self.width() - 20, self.height() - 20, 20, 20)
         self.grip_bottom_left.setGeometry(0, self.height() - 20, 20, 20)
         self.grip_top_right.setGeometry(self.width() - 20, 0, 20, 20)
         self.grip_top_left.setGeometry(0, 0, 20, 20)
-        
-        # Вызываем обработчик изменения размера для кнопок
+
+        # Größenänderungs-Handler für die Buttons aufrufen
         if hasattr(self, 'resize_timer'):
             self.resize_timer.start(200)
         QMainWindow.resizeEvent(self, event)
 
     def mousePressEvent(self, event):
-        # Проверяем, находится ли курсор на краю окна
+        # Prüfen, ob sich der Cursor am Fensterrand befindet
         edge = self.getResizeEdge(event.pos())
         if edge and event.button() == Qt.LeftButton:
             self.resizing = True
@@ -127,84 +134,12 @@ class ClipGenView(QMainWindow):
             self.setCursor(self.getResizeCursor(edge))
             self.old_pos = event.globalPos()
             return
-        
-        # Если клик в заголовке, готовимся к перетаскиванию
+
+        # Wenn im Titelbereich geklickt wird, zum Ziehen vorbereiten
         if event.button() == Qt.LeftButton and event.pos().y() < 30 and not edge:
             self.old_pos = event.globalPos()
-        
+
         super().mousePressEvent(event)
-
-    def setup_title_bar(self):
-        self.title_bar = QWidget()
-        self.title_bar.setFixedHeight(30)
-        self.title_bar.setStyleSheet("background-color: #1e1e1e; border-top-left-radius: 10px; border-top-right-radius: 10px;")
-        self.title_layout = QHBoxLayout(self.title_bar)
-        self.title_layout.setContentsMargins(10, 0, 10, 0)
-
-        self.title_label = QLabel("ClipGen")
-        self.title_label.setStyleSheet("color: #FFFFFF;")
-        self.title_layout.addWidget(self.title_label)
-        self.title_layout.addStretch()
-
-        # Кнопки в стиле Windows (справа налево): закрыть, развернуть, свернуть
-        buttons_layout = QHBoxLayout()
-        buttons_layout.setSpacing(8)
-        
-        # Кнопка закрытия (красная)
-        self.close_button = QPushButton()
-        self.close_button.setFixedSize(15, 15)
-        self.close_button.clicked.connect(self.close)
-        self.close_button.setStyleSheet("""
-            QPushButton {
-                background-color: #FF5F57;
-                border: none;
-                border-radius: 7px;
-            }
-            QPushButton:hover {
-                background-color: #FF5F57;
-                border: 1px solid #E14942;
-            }
-        """)
-        
-        # Кнопка разворачивания (зеленая)
-        self.maximize_button = QPushButton()
-        self.maximize_button.setFixedSize(15, 15)
-        self.maximize_button.clicked.connect(self.toggle_maximize)
-        self.maximize_button.setStyleSheet("""
-            QPushButton {
-                background-color: #28C940;
-                border: none;
-                border-radius: 7px;
-            }
-            QPushButton:hover {
-                background-color: #28C940;
-                border: 1px solid #1AAB29;
-            }
-        """)
-        
-        # Кнопка сворачивания (желтая)
-        self.minimize_button = QPushButton()
-        self.minimize_button.setFixedSize(15, 15)
-        self.minimize_button.clicked.connect(self.showMinimized)
-        self.minimize_button.setStyleSheet("""
-            QPushButton {
-                background-color: #FFBD2E;
-                border: none;
-                border-radius: 7px;
-            }
-            QPushButton:hover {
-                background-color: #FFBD2E;
-                border: 1px solid #DFA123;
-            }
-        """)
-        
-        # Добавляем кнопки в порядке Windows (слева направо)
-        buttons_layout.addWidget(self.minimize_button)
-        buttons_layout.addWidget(self.maximize_button)
-        buttons_layout.addWidget(self.close_button)
-        
-        self.title_layout.addLayout(buttons_layout)
-        self.layout.addWidget(self.title_bar)
 
     def setup_buttons(self):
         self.button_widget = QWidget()
@@ -219,26 +154,26 @@ class ClipGenView(QMainWindow):
     def setup_tabs(self):
         self.tabs = QTabWidget()
         self.tabs.setStyleSheet("""
-            QTabWidget::pane { 
-                background-color: #1e1e1e; 
-                border: none; 
-                border-radius: 10px; 
+            QTabWidget::pane {
+                background-color: #1e1e1e;
+                border: none;
+                border-radius: 10px;
             }
-            QTabBar::tab { 
-                background-color: #333333; 
-                color: #FFFFFF; 
-                padding: 8px 12px; 
+            QTabBar::tab {
+                background-color: #333333;
+                color: #FFFFFF;
+                padding: 8px 12px;
                 margin-right: 2px;
-                border-top-left-radius: 5px; 
+                border-top-left-radius: 5px;
                 border-top-right-radius: 5px;
                 min-width: 100px;
             }
-            QTabBar::tab:selected { 
-                background-color: #2A2A2A;  /* Цвет активной вкладки */
+            QTabBar::tab:selected {
+                background-color: #2A2A2A;  /* Farbe des aktiven Tabs */
                 border-bottom: 2px solid #FFFFFF;
             }
-            QTabBar::tab:hover:!selected { 
-                background-color: #3c3c3c; 
+            QTabBar::tab:hover:!selected {
+                background-color: #3c3c3c;
             }
         """)
         self.layout.addWidget(self.tabs, stretch=1)
@@ -251,12 +186,12 @@ class ClipGenView(QMainWindow):
         self.log_layout = QVBoxLayout(self.log_tab)
         self.log_layout.setContentsMargins(15, 15, 15, 15)
 
-        # Область логов
+        # Log-Bereich
         self.log_area = QTextBrowser()
         self.log_area.setStyleSheet("""
-            background-color: #252525; 
-            color: #FFFFFF; 
-            border: none; 
+            background-color: #252525;
+            color: #FFFFFF;
+            border: none;
             border-radius: 10px;
             padding: 15px;
             line-height: 1.5;
@@ -267,9 +202,9 @@ class ClipGenView(QMainWindow):
         self.log_area.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard | Qt.LinksAccessibleByMouse)
         self.log_area.setCursorWidth(2)
 
-        # Кнопки действий с логами
+        # Log-Aktionsbuttons
         log_actions = QHBoxLayout()
-        clear_logs = QPushButton("Очистить логи")
+        clear_logs = QPushButton("Logs löschen")
         clear_logs.clicked.connect(lambda: self.log_area.clear())
         clear_logs.setStyleSheet("""
             QPushButton {
@@ -289,7 +224,7 @@ class ClipGenView(QMainWindow):
         """)
         log_actions.addWidget(clear_logs)
 
-        copy_logs = QPushButton("Копировать логи")
+        copy_logs = QPushButton("Logs kopieren")
         copy_logs.clicked.connect(lambda: pyperclip.copy(self.log_area.toPlainText()))
         copy_logs.setStyleSheet("""
             QPushButton {
@@ -312,7 +247,7 @@ class ClipGenView(QMainWindow):
 
         self.log_layout.addWidget(self.log_area)
         self.log_layout.addLayout(log_actions)
-        self.tabs.addTab(self.log_tab, "Логи")
+        self.tabs.addTab(self.log_tab, "Logs")
 
     def setup_settings_tab(self):
         self.settings_tab = QWidget()
@@ -321,12 +256,12 @@ class ClipGenView(QMainWindow):
         self.settings_layout.setSpacing(15)
         self.settings_layout.setContentsMargins(20, 20, 20, 20)
 
-        # Provider selection
+        # Provider-Auswahl
         provider_container = QFrame()
         provider_container.setStyleSheet("background-color: #252525; border-radius: 15px; padding: 10px;")
         provider_layout = QVBoxLayout(provider_container)
 
-        provider_label = QLabel("AI Provider:")
+        provider_label = QLabel("KI-Anbieter:")
         provider_layout.addWidget(provider_label)
 
         self.provider_combo = QComboBox()
@@ -349,59 +284,59 @@ class ClipGenView(QMainWindow):
         provider_layout.addWidget(self.provider_combo)
         self.settings_layout.addWidget(provider_container)
 
-        # --- Provider-specific settings ---
+        # --- Anbieterspezifische Einstellungen ---
         self.provider_settings_container = QWidget()
         self.provider_settings_layout = QStackedLayout(self.provider_settings_container)
         self.settings_layout.addWidget(self.provider_settings_container)
 
         self.provider_settings_frames = {}
 
-        # Gemini Settings
+        # Gemini-Einstellungen
         gemini_frame = QFrame()
         gemini_frame.setLayout(QVBoxLayout())
         self.gemini_api_key_input = QLineEdit(self.config.get("providers", {}).get("gemini", {}).get("api_key", ""))
-        gemini_frame.layout().addWidget(QLabel("Gemini API Key:"))
+        gemini_frame.layout().addWidget(QLabel("Gemini API-Schlüssel:"))
         gemini_frame.layout().addWidget(self.gemini_api_key_input)
         self.provider_settings_layout.addWidget(gemini_frame)
         self.provider_settings_frames["Gemini"] = gemini_frame
 
-        # Groq Settings
+        # Groq-Einstellungen
         groq_frame = QFrame()
         groq_frame.setLayout(QVBoxLayout())
         self.groq_api_key_input = QLineEdit(self.config.get("providers", {}).get("groq", {}).get("api_key", ""))
         self.groq_model_input = QLineEdit(self.config.get("providers", {}).get("groq", {}).get("model", "llama3-8b-8192"))
-        groq_frame.layout().addWidget(QLabel("Groq API Key:"))
+        groq_frame.layout().addWidget(QLabel("Groq API-Schlüssel:"))
         groq_frame.layout().addWidget(self.groq_api_key_input)
-        groq_frame.layout().addWidget(QLabel("Groq Model:"))
+        groq_frame.layout().addWidget(QLabel("Groq Modell:"))
         groq_frame.layout().addWidget(self.groq_model_input)
         self.provider_settings_layout.addWidget(groq_frame)
         self.provider_settings_frames["Groq"] = groq_frame
 
-        # Mistral Settings
+        # Mistral-Einstellungen
         mistral_frame = QFrame()
         mistral_frame.setLayout(QVBoxLayout())
         self.mistral_api_key_input = QLineEdit(self.config.get("providers", {}).get("mistral", {}).get("api_key", ""))
         self.mistral_model_input = QLineEdit(self.config.get("providers", {}).get("mistral", {}).get("model", "mistral-large-latest"))
-        mistral_frame.layout().addWidget(QLabel("Mistral API Key:"))
+        mistral_frame.layout().addWidget(QLabel("Mistral API-Schlüssel:"))
         mistral_frame.layout().addWidget(self.mistral_api_key_input)
-        mistral_frame.layout().addWidget(QLabel("Mistral Model:"))
+        mistral_frame.layout().addWidget(QLabel("Mistral Modell:"))
         mistral_frame.layout().addWidget(self.mistral_model_input)
         self.provider_settings_layout.addWidget(mistral_frame)
         self.provider_settings_frames["Mistral"] = mistral_frame
 
-        # Ollama Settings
+        # Ollama-Einstellungen
         ollama_frame = QFrame()
         ollama_frame.setLayout(QVBoxLayout())
         self.ollama_host_input = QLineEdit(self.config.get("providers", {}).get("ollama", {}).get("host", "http://localhost:11434"))
         self.ollama_model_input = QLineEdit(self.config.get("providers", {}).get("ollama", {}).get("model", "llama3"))
         ollama_frame.layout().addWidget(QLabel("Ollama Host:"))
         ollama_frame.layout().addWidget(self.ollama_host_input)
-        ollama_frame.layout().addWidget(QLabel("Ollama Model:"))
+        ollama_frame.layout().addWidget(QLabel("Ollama Modell:"))
         ollama_frame.layout().addWidget(self.ollama_model_input)
         self.provider_settings_layout.addWidget(ollama_frame)
         self.provider_settings_frames["Ollama"] = ollama_frame
 
-        # Connect signals for provider settings
+        # Signale für Anbieter-Einstellungen verbinden
         self.gemini_api_key_input.textChanged.connect(
             lambda text: self.setting_changed.emit(["providers", "gemini", "api_key", text])
         )
@@ -424,17 +359,18 @@ class ClipGenView(QMainWindow):
             lambda text: self.setting_changed.emit(["providers", "ollama", "model", text])
         )
 
-        # Set initial state
+        # Anfangszustand setzen
         current_provider = self.config.get("general", {}).get("provider", "Gemini")
         self.provider_combo.setCurrentText(current_provider)
         self._update_ui_for_provider()
 
     def _update_ui_for_provider(self):
         selected_provider = self.provider_combo.currentText()
+        self.provider_settings_layout.setCurrentWidget(self.provider_settings_frames[selected_provider])
 
-        # Enable/disable image analysis hotkey
+        # Hotkey für Bildanalyse aktivieren/deaktivieren
         vision_providers = ["Gemini", "Ollama"]
-        image_hotkey_name = "Анализ изображения"
+        image_hotkey_name = "Bildanalyse"
 
         for hotkey in self.config["hotkeys"]:
             if hotkey["name"] == image_hotkey_name:
@@ -443,12 +379,12 @@ class ClipGenView(QMainWindow):
                     self.buttons[hotkey_combo].setEnabled(selected_provider in vision_providers)
                 break
 
-        # Заголовок для горячих клавиш
-        hotkeys_title = QLabel("Настройка горячих клавиш")
+        # Titel für Hotkeys
+        hotkeys_title = QLabel("Hotkey-Einstellungen")
         hotkeys_title.setStyleSheet("font-size: 16px;")
         self.settings_layout.addWidget(hotkeys_title)
 
-        # Создание карточек для каждой горячей клавиши
+        # Karten für jeden Hotkey erstellen
         self.prompt_inputs = {}
         self.name_inputs = {}
         self.color_pickers = {}
@@ -463,13 +399,13 @@ class ClipGenView(QMainWindow):
                 }}
             """)
             hotkey_layout = QVBoxLayout(hotkey_card)
-            
-            # Выбор комбинации клавиш
+
+            # Tastenkombination auswählen
             hotkey_header = QHBoxLayout()
-            
-            # Создаем поле для записи комбинации клавиш
+
+            # Feld zum Aufzeichnen der Tastenkombination erstellen
             hotkey_edit = QKeySequenceEdit()
-            hotkey_edit.setKeySequence(hotkey["combination"])  # Устанавливаем текущую комбинацию
+            hotkey_edit.setKeySequence(hotkey["combination"])  # Aktuelle Kombination festlegen
             hotkey_edit.setStyleSheet("""
                 QKeySequenceEdit {
                     background-color: #333333;
@@ -479,14 +415,14 @@ class ClipGenView(QMainWindow):
                     font-family: 'Consolas', 'Courier New', monospace;
                 }
             """)
-            # Добавляем обработчик изменения комбинации
+            # Handler für Kombinationsänderung hinzufügen
             hotkey_edit.keySequenceChanged.connect(
                 lambda seq, h=hotkey: self.update_hotkey_from_sequence(h, seq.toString())
             )
-            # Добавляем поле в макет
+            # Feld zum Layout hinzufügen
             hotkey_header.addWidget(hotkey_edit)
-            
-            # Добавляем кнопку удаления справа
+
+            # Löschen-Button rechts hinzufügen
             delete_button = QPushButton("✕")
             delete_button.setFixedSize(25, 25)
             delete_button.setStyleSheet("""
@@ -502,17 +438,17 @@ class ClipGenView(QMainWindow):
             """)
             delete_button.clicked.connect(lambda *, h=hotkey: self.delete_hotkey(h))
             hotkey_header.addWidget(delete_button)
-            
+
             hotkey_layout.addLayout(hotkey_header)
-            
-            # Поле для имени действия
-            name_label = QLabel("Название действия:")
+
+            # Feld für Aktionsnamen
+            name_label = QLabel("Aktionsname:")
             name_label.setStyleSheet("margin-top: 10px;")
             hotkey_layout.addWidget(name_label)
-            
+
             name_input = QLineEdit(hotkey["name"])
             name_input.setStyleSheet("""
-                border-radius: 8px; 
+                border-radius: 8px;
                 border: 1px solid #444444;
                 padding: 8px;
                 background-color: #2a2a2a;
@@ -520,16 +456,16 @@ class ClipGenView(QMainWindow):
             name_input.textChanged.connect(lambda text, h=hotkey: self.update_name(h, text))
             hotkey_layout.addWidget(name_input)
             self.name_inputs[hotkey["combination"]] = name_input
-            
-            # Поле для промпта
-            prompt_label = QLabel("Промпт:")
+
+            # Feld für Prompt
+            prompt_label = QLabel("Prompt:")
             prompt_label.setStyleSheet("margin-top: 10px;")
             hotkey_layout.addWidget(prompt_label)
-            
+
             prompt_input = QTextEdit(hotkey["prompt"])
             prompt_input.setMinimumHeight(100)
             prompt_input.setStyleSheet("""
-                border-radius: 8px; 
+                border-radius: 8px;
                 border: 1px solid #444444;
                 padding: 8px;
                 background-color: #2a2a2a;
@@ -537,42 +473,42 @@ class ClipGenView(QMainWindow):
             prompt_input.textChanged.connect(lambda h=hotkey, pi=prompt_input: self.update_prompt(h, pi.toPlainText()))
             hotkey_layout.addWidget(prompt_input)
             self.prompt_inputs[hotkey["combination"]] = prompt_input
-            
-            # Выбор цвета
+
+            # Farbauswahl
             color_layout = QHBoxLayout()
-            
-            color_label = QLabel("Цвет в логах:")
+
+            color_label = QLabel("Farbe in Logs:")
             color_label.setStyleSheet("margin-top: 10px;")
             color_layout.addWidget(color_label)
-            
+
             color_input = QLineEdit(hotkey["log_color"].replace("#", ""))
             color_input.setFixedWidth(80)
             color_input.setStyleSheet("""
-                border-radius: 8px; 
+                border-radius: 8px;
                 border: 1px solid #444444;
                 padding: 5px;
                 background-color: #2a2a2a;
             """)
             color_input.textChanged.connect(lambda text, h=hotkey: self.update_color(h, f"#{text}"))
-            
+
             color_preview = QPushButton()
             color_preview.setFixedSize(25, 25)
             color_preview.setStyleSheet(f"background-color: {hotkey['log_color']}; border-radius: 5px; border: none;")
             color_preview.clicked.connect(lambda checked, h=hotkey, inp=color_input: self.open_color_picker(h, inp))
-            
+
             color_layout.addWidget(color_input)
             color_layout.addWidget(color_preview)
             color_layout.addStretch()
-            
+
             self.color_pickers[hotkey["combination"]] = (color_input, color_preview)
-            
+
             hotkey_layout.addLayout(color_layout)
-            
+
             self.settings_layout.addWidget(hotkey_card)
 
-        # Кнопки для добавления/удаления горячих клавиш
+        # Buttons zum Hinzufügen/Entfernen von Hotkeys
         hotkey_buttons_layout = QHBoxLayout()
-        add_hotkey_button = QPushButton("Добавить новое действие")
+        add_hotkey_button = QPushButton("Neue Aktion hinzufügen")
         add_hotkey_button.setStyleSheet("""
             QPushButton {
                 background-color: #3D8948;
@@ -595,117 +531,112 @@ class ClipGenView(QMainWindow):
         self.settings_scroll.setWidgetResizable(True)
         self.settings_scroll.setStyleSheet("""
             QScrollArea {
-                background-color: transparent; 
+                background-color: transparent;
                 border: none;
             }
             QWidget#qt_scrollarea_viewport {
                 background-color: transparent;
             }
         """)
-        self.tabs.addTab(self.settings_scroll, "Настройки")
+        self.tabs.addTab(self.settings_scroll, "Einstellungen")
 
     def add_new_hotkey(self):
-        # Создаем новую горячую клавишу
+        # Neuen Hotkey erstellen
         new_hotkey = {
             "combination": "Ctrl+N",
-            "name": "Новое действие",
+            "name": "Neue Aktion",
             "log_color": "#FFFFFF",
-            "prompt": "Введите промпт для нового действия..."
+            "prompt": "Geben Sie den Prompt für die neue Aktion ein..."
         }
-        
-        # Добавляем в конфигурацию
+
+        # Zur Konfiguration hinzufügen
         self.config["hotkeys"].append(new_hotkey)
-        
-        # Обновляем интерфейс
+
+        # Oberfläche aktualisieren
         self.update_buttons()
-        
-        # Перезагружаем настройки
+
+        # Einstellungen neu laden
         self.reload_settings_tab()
-        
-        # Обновляем key_states для отслеживания новой комбинации
+
+        # key_states für die neue Kombination aktualisieren
         self.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
         self.key_states["ctrl"] = False
         self.key_states["alt"] = False
         self.key_states["shift"] = False
-        
-        # Сохраняем настройки
+
+        # Einstellungen speichern
         self.save_settings()
-        
-        # Обновляем обработчик логов с новыми цветами
-        #for handler in logger.handlers:
-        #    if hasattr(handler, 'action_colors'):
-        #        handler.action_colors = {k["name"]: k["log_color"] for k in self.config["hotkeys"]}
 
     def reload_settings_tab(self):
-        # Сохраняем индекс текущей активной вкладки
+        # Index des aktuell aktiven Tabs speichern
         current_tab_index = self.tabs.currentIndex()
-        
-        # Удаляем старый виджет
+
+        # Altes Widget entfernen
         self.tabs.removeTab(self.tabs.indexOf(self.settings_scroll))
-        
-        # Создаем заново
+
+        # Neu erstellen
         self.setup_settings_tab()
-        
-        # Восстанавливаем активную вкладку
+
+        # Aktiven Tab wiederherstellen
         self.tabs.setCurrentIndex(current_tab_index)
 
     def update_hotkey_from_sequence(self, hotkey, sequence):
-        """Обновляет комбинацию клавиш по новой записи последовательности"""
-        if not sequence:  # Если последовательность пустая
+        """Aktualisiert die Tastenkombination gemäß der neuen Sequenzaufzeichnung."""
+        if not sequence:  # Wenn die Sequenz leer ist
             return
-            
-        # Обновляем в конфигурации
+
+        # In der Konfiguration aktualisieren
         old_combo = hotkey["combination"]
-        
-        # Проверяем, не используется ли уже такая комбинация
+
+        # Prüfen, ob diese Kombination bereits verwendet wird
         if any(h["combination"] == sequence for h in self.config["hotkeys"] if h != hotkey):
-            # Показываем предупреждение
-            QMessageBox.warning(self, 
-                            "Дублирование комбинации", 
-                            f"Комбинация {sequence} уже используется другим действием.",
+            # Warnung anzeigen
+            QMessageBox.warning(self,
+                            "Doppelte Kombination",
+                            f"Die Kombination {sequence} wird bereits von einer anderen Aktion verwendet.",
                             QMessageBox.Ok)
             return
-        
-        # Обновляем комбинацию
+
+        # Kombination aktualisieren
         hotkey["combination"] = sequence
-        
-        # Обновляем key_states и интерфейс
+
+        # key_states und Oberfläche aktualisieren
         self.update_hotkey(old_combo, sequence)
 
     def delete_hotkey(self, hotkey):
-        """Удаляет горячую клавишу из конфигурации"""
-        # Просим подтверждение
-        reply = QMessageBox.question(self, 
-                                'Подтверждение удаления', 
-                                f"Вы уверены, что хотите удалить действие '{hotkey['name']}'?",
-                                QMessageBox.Yes | QMessageBox.No, 
+        """Entfernt einen Hotkey aus der Konfiguration."""
+        # Um Bestätigung bitten
+        reply = QMessageBox.question(self,
+                                'Löschbestätigung',
+                                f"Sind Sie sicher, dass Sie die Aktion '{hotkey['name']}' löschen möchten?",
+                                QMessageBox.Yes | QMessageBox.No,
                                 QMessageBox.No)
-        
+
         if reply == QMessageBox.Yes:
-            # Удаляем из конфигурации
+            # Aus der Konfiguration entfernen
             self.config["hotkeys"].remove(hotkey)
-            
-            # Обновляем интерфейс
+
+            # Oberfläche aktualisieren
             self.update_buttons()
-            
-            # Перезагружаем настройки
+
+            # Einstellungen neu laden
             self.reload_settings_tab()
-            
-            # Обновляем key_states
+
+            # key_states aktualisieren
             self.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
             self.key_states["ctrl"] = False
             self.key_states["alt"] = False
             self.key_states["shift"] = False
-            
-            # Сохраняем настройки
+
+            # Einstellungen speichern
             self.save_settings()
 
     def apply_styles(self):
         self.setStyleSheet("""
-            QTabWidget::pane { 
-                background-color: #1e1e1e; 
-                border: none; 
-                border-radius: 10px; 
+            QTabWidget::pane {
+                background-color: #1e1e1e;
+                border: none;
+                border-radius: 10px;
             }
             QWidget {
                 background-color: #1e1e1e;
@@ -713,30 +644,30 @@ class ClipGenView(QMainWindow):
             QFrame {
                 background-color: #252525;
             }
-            QPushButton { 
-                background-color: #333333; 
-                border-radius: 10px; 
-                padding: 8px; 
+            QPushButton {
+                background-color: #333333;
+                border-radius: 10px;
+                padding: 8px;
                 color: #FFFFFF;
             }
-            QPushButton:hover { 
-                background-color: #404040; 
+            QPushButton:hover {
+                background-color: #404040;
             }
-            QPushButton:pressed { 
-                background-color: #2a2a2a; 
+            QPushButton:pressed {
+                background-color: #2a2a2a;
             }
-            QLineEdit, QTextEdit { 
-                background-color: #2e2e2e; 
-                color: #FFFFFF; 
-                border: 1px solid #444444; 
-                border-radius: 10px; 
+            QLineEdit, QTextEdit {
+                background-color: #2e2e2e;
+                color: #FFFFFF;
+                border: 1px solid #444444;
+                border-radius: 10px;
                 padding: 5px;
             }
-            QLineEdit:focus, QTextEdit:focus { 
-                border: 1px solid #A3BFFA; 
+            QLineEdit:focus, QTextEdit:focus {
+                border: 1px solid #A3BFFA;
             }
-            QLabel { 
-                color: #FFFFFF; 
+            QLabel {
+                color: #FFFFFF;
                 background-color: transparent;
             }
             QScrollBar:vertical, QScrollBar:horizontal {
@@ -755,18 +686,18 @@ class ClipGenView(QMainWindow):
             QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
                 background: #666666;
             }
-            QScrollBar::add-line, QScrollBar::sub-line { 
-                background: none; 
+            QScrollBar::add-line, QScrollBar::sub-line {
+                background: none;
                 height: 0px;
                 width: 0px;
             }
-            QScrollBar::add-page, QScrollBar::sub-page { 
-                background: none; 
+            QScrollBar::add-page, QScrollBar::sub-page {
+                background: none;
             }
             QTextBrowser {
-                background-color: #252525; 
-                color: #FFFFFF; 
-                border: none; 
+                background-color: #252525;
+                color: #FFFFFF;
+                border: none;
                 border-radius: 10px;
                 padding: 10px;
                 selection-background-color: #A3BFFA;
@@ -792,22 +723,22 @@ class ClipGenView(QMainWindow):
         for i, hotkey in enumerate(self.config["hotkeys"]):
             row_idx = i // buttons_per_row
             btn = QPushButton(f"{hotkey['name']}")
-            btn.setToolTip(f"Горячая клавиша: {hotkey['combination']}")
-            btn.setFixedHeight(30)  # Уменьшенная высота кнопок
+            btn.setToolTip(f"Hotkey: {hotkey['combination']}")
+            btn.setFixedHeight(30)  # Reduzierte Button-Höhe
             color = hotkey['log_color']
             btn.setStyleSheet(f"""
-                QPushButton {{ 
-                    color: {color}; 
+                QPushButton {{
+                    color: {color};
                     background-color: #333333;
                     border-radius: 10px;
                     padding: 5px 10px;
                 }}
-                QPushButton:hover {{ 
-                    background-color: {color}; 
+                QPushButton:hover {{
+                    background-color: {color};
                     color: #333333;
                 }}
-                QPushButton:pressed {{ 
-                    background-color: {color}80; 
+                QPushButton:pressed {{
+                    background-color: {color}80;
                 }}
             """)
             btn.clicked.connect(lambda checked, h=hotkey: self.queue.put(h["name"]))
@@ -824,41 +755,41 @@ class ClipGenView(QMainWindow):
 
     def append_log(self, msg, color):
         self.log_area.moveCursor(QTextCursor.End)
-        
-        # Определяем тип лога для форматирования
-        if "секунд" in msg:
-            # Это сообщение о времени выполнения
+
+        # Log-Typ für die Formatierung bestimmen
+        if "Sekunden" in msg:
+            # Dies ist die Nachricht über die Ausführungszeit
             self.log_area.setTextColor(QColor("#888888"))
             self.log_area.append(f"    {msg}")
         elif any(f"{hotkey['combination']}: {hotkey['name']}" in msg for hotkey in self.config["hotkeys"]):
-            # Это заголовок действия
+            # Dies ist der Aktionstitel
             self.log_area.setTextColor(QColor(color))
-            
-            # Добавляем разделитель, если это не первое сообщение
+
+            # Trennzeichen hinzufügen, wenn es nicht die erste Nachricht ist
             cursor = self.log_area.textCursor()
             if not cursor.atStart():
                 self.log_area.append("\n" + "─" * 40 + "\n")
-                
+
             self.log_area.append(f"{msg}")
-        elif "Ошибка:" in msg:
-            # Это сообщение об ошибке
+        elif "Fehler:" in msg:
+            # Dies ist eine Fehlermeldung
             self.log_area.setTextColor(QColor("#FF5555"))
             self.log_area.append(f"❌ {msg}")
-        elif "Буфер обмена пуст" in msg:
-            # Это предупреждение
+        elif "Zwischenablage" in msg and "leer" in msg:
+            # Dies ist eine Warnung
             self.log_area.setTextColor(QColor("#FFDD55"))
             self.log_area.append(f"⚠️ {msg}")
         else:
-            # Это результат обработки или другое сообщение
+            # Dies ist ein Verarbeitungsergebnis oder eine andere Nachricht
             self.log_area.setTextColor(QColor(color))
-            
-            # Если это результат, добавляем отступ и форматирование
-            if not msg.startswith("Программа запущена"):
+
+            # Wenn es sich um ein Ergebnis handelt, Einzug und Formatierung hinzufügen
+            if not msg.startswith("ClipGen gestartet"):
                 self.log_area.append(f"    {msg}")
             else:
                 self.log_area.append(msg)
-        
-        # Прокрутка вниз
+
+        # Nach unten scrollen
         self.log_area.ensureCursorVisible()
 
     def toggle_maximize(self):
@@ -868,40 +799,40 @@ class ClipGenView(QMainWindow):
             self.showMaximized()
 
     def mouseMoveEvent(self, event):
-        # Если режим изменения размера
+        # Wenn im Größenänderungsmodus
         if self.resizing and self.resize_edge and self.old_pos:
             delta = event.globalPos() - self.old_pos
             self.resizeWindow(delta)
             self.old_pos = event.globalPos()
             return
-        
-        # Определяем, находится ли курсор на краю окна
+
+        # Bestimmen, ob sich der Cursor am Fensterrand befindet
         edge = self.getResizeEdge(event.pos())
         if edge:
             self.setCursor(self.getResizeCursor(edge))
         else:
             self.setCursor(Qt.ArrowCursor)
-            
-        # Если режим перетаскивания
+
+        # Wenn im Ziehmodus
         if not self.resizing and self.old_pos:
             delta = event.globalPos() - self.old_pos
             self.move(self.x() + delta.x(), self.y() + delta.y())
             self.old_pos = event.globalPos()
-        
+
         super().mouseMoveEvent(event)
 
     def getResizeEdge(self, pos):
-        # Ширина краев для изменения размера
+        # Breite der Ränder zum Ändern der Größe
         margin = 5
         width = self.width()
         height = self.height()
-        
-        # Проверяем, находится ли курсор на краю окна
+
+        # Prüfen, ob sich der Cursor am Fensterrand befindet
         left = pos.x() <= margin
         top = pos.y() <= margin
         right = pos.x() >= width - margin
         bottom = pos.y() >= height - margin
-        
+
         if top and left:
             return "top_left"
         elif top and right:
@@ -918,9 +849,9 @@ class ClipGenView(QMainWindow):
             return "top"
         elif bottom:
             return "bottom"
-        
+
         return None
-    
+
     def getResizeCursor(self, edge):
         if edge in ["left", "right"]:
             return Qt.SizeHorCursor
@@ -931,39 +862,39 @@ class ClipGenView(QMainWindow):
         elif edge in ["top_right", "bottom_left"]:
             return Qt.SizeBDiagCursor
         return Qt.ArrowCursor
-    
+
     def resizeWindow(self, delta):
         x, y = self.x(), self.y()
         width, height = self.width(), self.height()
         min_width, min_height = self.minimumWidth(), self.minimumHeight()
-        
+
         if self.resize_edge in ["left", "top_left", "bottom_left"]:
-            # Изменяем левый край (меняем x и ширину)
+            # Linken Rand ändern (x und Breite ändern)
             new_x = x + delta.x()
             new_width = width - delta.x()
-            
+
             if new_width >= min_width:
                 self.setGeometry(new_x, y, new_width, height)
-        
+
         if self.resize_edge in ["right", "top_right", "bottom_right"]:
-            # Изменяем правый край (меняем только ширину)
+            # Rechten Rand ändern (nur Breite ändern)
             new_width = width + delta.x()
-            
+
             if new_width >= min_width:
                 self.setGeometry(x, y, new_width, height)
-        
+
         if self.resize_edge in ["top", "top_left", "top_right"]:
-            # Изменяем верхний край (меняем y и высоту)
+            # Oberen Rand ändern (y und Höhe ändern)
             new_y = y + delta.y()
             new_height = height - delta.y()
-            
+
             if new_height >= min_height:
                 self.setGeometry(x, new_y, width, new_height)
-        
+
         if self.resize_edge in ["bottom", "bottom_left", "bottom_right"]:
-            # Изменяем нижний край (меняем только высоту)
+            # Unteren Rand ändern (nur Höhe ändern)
             new_height = height + delta.y()
-            
+
             if new_height >= min_height:
                 self.setGeometry(x, y, width, new_height)
 
@@ -979,23 +910,23 @@ class ClipGenView(QMainWindow):
         super().resizeEvent(event)
 
     def open_color_picker(self, hotkey, color_input):
-        color = QColorDialog.getColor(QColor(hotkey["log_color"]), self, "Выберите цвет")
+        color = QColorDialog.getColor(QColor(hotkey["log_color"]), self, "Farbe auswählen")
         if color.isValid():
             hex_color = color.name()
             color_input.setText(hex_color.replace("#", ""))
             self.update_color(hotkey, hex_color)
-            # Обновляем превью
+            # Vorschau aktualisieren
             for combo, (input_field, preview) in self.color_pickers.items():
                 if combo == hotkey["combination"]:
                     preview.setStyleSheet(f"background-color: {hex_color}; border-radius: 5px; border: none;")
                     break
 
     def update_hotkey_combo(self, old_combo, key_type, key):
-        # Формируем новую комбинацию
+        # Neue Kombination erstellen
         new_combo = f"{key_type}+{key}"
         self.update_hotkey(old_combo, new_combo)
-        
-        # Обновляем словари с ссылками на элементы интерфейса
+
+        # Wörterbücher mit Verweisen auf UI-Elemente aktualisieren
         if old_combo in self.name_inputs:
             self.name_inputs[new_combo] = self.name_inputs.pop(old_combo)
         if old_combo in self.prompt_inputs:
