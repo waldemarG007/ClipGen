@@ -1,7 +1,7 @@
 # ClipGen
 
 <div align="center">
-   <img src="screenshots/clipgen-logo.png" alt="ClipGen Logo" width="200"/>
+   <img src="https://raw.githubusercontent.com/Veta-one/clipgen/main/screenshots/clipgen-logo.png" alt="ClipGen Logo" width="200"/>
    <p><em>Ihr KI-gestützter Begleiter für die Zwischenablage. Sofortige Textkorrektur, Übersetzung und Bildanalyse mit Ihren bevorzugten KI-Modellen.</em></p>
 </div>
 
@@ -11,9 +11,7 @@ ClipGen ist ein leistungsstarkes Desktop-Dienstprogramm, das die Art und Weise, 
 
 **Geschwindigkeit ist unsere Priorität** – ClipGen verarbeitet Anfragen in Sekunden, sodass es sich wie ein nativer Teil Ihres Betriebssystems anfühlt und nicht wie ein externes Werkzeug.
 
-![ClipGen in Aktion](screenshots/clipgen-demo.gif)
-**[Laden Sie ClipGen hier herunter](http://vetaone.site/ClipGen/ClipGen.zip)**
-*Wichtig: Vergessen Sie nicht, Ihre API-Schlüssel in der `settings.json`-Datei zu konfigurieren!*
+![ClipGen in Aktion](https://raw.githubusercontent.com/Veta-one/clipgen/main/screenshots/clipgen-demo.gif)
 
 ## ✨ Funktionen
 
@@ -24,62 +22,47 @@ ClipGen ist ein leistungsstarkes Desktop-Dienstprogramm, das die Art und Weise, 
   - **Ollama**: Um Ihre eigenen lokalen Modelle für maximale Privatsphäre und Anpassung zu verwenden.
 - ⌨️ **Hotkey-gesteuerter Arbeitsablauf** – Kein Wechsel zwischen Anwendungen erforderlich.
 - ⚙️ **System-Tray-Integration** – Läuft unauffällig im Hintergrund.
-- 🚀 **Autostart mit Windows** – Startet ClipGen automatisch beim Hochfahren.
+- 🚀 **Autostart-Funktion** – Startet ClipGen automatisch beim Hochfahren des Systems.
 - 🖥️ **Globaler Hotkey zum Anzeigen/Verstecken** – Greifen Sie von überall auf das Fenster zu.
-- ✏️ **Anpassbare Schriftgröße** – Passen Sie die Schriftgröße für eine bessere Lesbarkeit an.
+- ✏️ **Anpassbare Prompts und Aktionen** – Definieren Sie eigene Aktionen mit individuellen Prompts, Farben und Hotkeys.
 - 🧠 **KI-gestützte Operationen**:
   - Korrektur von Grammatik, Zeichensetzung und Rechtschreibung
   - Umformulierung und Verbesserung von Texten
-  - Übersetzung zwischen mehr als 140 Sprachen
+  - Übersetzung zwischen Sprachen
   - Erklärung komplexer Begriffe oder Konzepte
   - Beantwortung von Fragen basierend auf dem Inhalt der Zwischenablage
   - Bildanalyse (mit unterstützten Modellen wie Gemini und Ollama)
-  - Benutzerdefinierte Anfragen
-  - Generierung humorvoller Kommentare – vollständig anpassbare Prompts, die zu Ihrem Stil passen
 
 ## 🛠️ Installation
 
 ### Voraussetzungen
 - Python 3.8 oder höher
-- Windows-Betriebssystem (derzeit nur für Windows)
+- Läuft unter Windows und den meisten Linux-Distributionen mit X11.
 
 ### Einrichtung
 
 1. **Klonen Sie das Repository**
-   ```
+   ```bash
    git clone https://github.com/Veta-one/clipgen.git
    cd clipgen
    ```
+   Alternativ können Sie die neueste Version als [ZIP-Datei herunterladen](https://github.com/Veta-one/clipgen/archive/refs/heads/main.zip).
 
 2. **Installieren Sie die Abhängigkeiten**
-   ```
+   ```bash
    pip install -r requirements.txt
    ```
+   *Hinweis für Linux-Nutzer:* Möglicherweise müssen Sie zusätzliche Bibliotheken für `PyQt5` und `pynput` installieren (`sudo apt-get install xclip python3-pyqt5 libx11-dev`).
 
 3. **Konfigurieren Sie ClipGen**
-   - Führen Sie die Anwendung einmal aus, um die Datei `settings.json` zu generieren.
-   - Öffnen Sie `settings.json` in einem Texteditor.
-   - Wählen Sie in der Einstellungs-UI Ihren gewünschten KI-Anbieter aus dem Dropdown-Menü.
-   - Füllen Sie die erforderlichen Details (wie API-Schlüssel oder Modellnamen) für Ihren gewählten Anbieter aus.
-
-### Anwendung ausführen und Autostart
-Damit die Anwendung korrekt funktioniert, insbesondere die Autostart-Funktion, befolgen Sie bitte diese Schritte:
-
-1.  **Projektordner an einen festen Ort verschieben.** Bevor Sie die Anwendung zum ersten Mal ausführen, verschieben Sie den gesamten `ClipGen`-Ordner an einen Ort, an dem er dauerhaft verbleiben soll. Gute Beispiele sind `C:\Programme\ClipGen` oder `C:\Benutzer\IhrName\Anwendungen\ClipGen`.
-    > **Warnung:** Führen Sie die Anwendung nicht aus Ihrem `Downloads`-Ordner aus, wenn Sie die Autostart-Funktion verwenden möchten, da dieser Ordner möglicherweise verschoben oder geleert wird.
-
-2.  **Anwendung ausführen**, indem Sie `ClipGen.py` von seinem neuen, festen Speicherort aus starten.
-
-3.  **Autostart aktivieren (Optional).** Um ClipGen automatisch mit Windows zu starten:
-    - Öffnen Sie das Hauptfenster (standardmäßig mit `Strg+Umschalt+C` oder durch Klicken auf das Tray-Icon).
-    - Gehen Sie zum Reiter "Einstellungen".
-    - Aktivieren Sie das Kontrollkästchen **"Mit Windows starten"**.
-
-Die Anwendung registriert ihren aktuellen Pfad für den Autostart. Wenn Sie den Ordner verschieben, *nachdem* Sie diese Option aktiviert haben, kann sie nicht mehr gestartet werden. Sie müssen dann zu den Einstellungen zurückkehren, den Autostart deaktivieren und wieder aktivieren, um den Pfad zu aktualisieren.
+   - Führen Sie die Anwendung einmal aus: `python ClipGen.py`.
+   - Beim ersten Start wird automatisch eine `settings.json`-Datei erstellt.
+   - Öffnen Sie die Anwendung, gehen Sie zum Tab "Einstellungen" und wählen Sie Ihren KI-Anbieter.
+   - Tragen Sie die erforderlichen Daten (z. B. API-Schlüssel) für den gewählten Anbieter ein. Änderungen werden automatisch gespeichert.
 
 ## 📋 Anforderungen
 
-Die Datei `requirements.txt` enthält alle notwendigen Abhängigkeiten:
+Die Datei `requirements.txt` enthält alle notwendigen Python-Abhängigkeiten:
 ```
 PyQt5==5.15.9
 pyperclip==1.9.0
@@ -87,34 +70,30 @@ google-generativeai==0.8.4
 pywin32==310
 pynput==1.8.0
 Pillow==11.1.0
-groq==0.9.0
-mistralai==0.4.1
-ollama==0.3.0
+groq
+mistralai
+ollama
 ```
+*Anmerkung: `pywin32` ist nur für Windows erforderlich und wird auf anderen Betriebssystemen ignoriert.*
 
 ## 🔥 Wie man es benutzt
 
-1. **Starten Sie ClipGen** – Führen Sie die Anwendung aus. Sie wird in den System-Tray minimiert.
-2. **Fenster umschalten** – Verwenden Sie den globalen Hotkey (`Strg+Umschalt+C` standardmäßig) oder klicken Sie auf das Tray-Icon, um das Fenster anzuzeigen/zu verstecken.
-3. **Wählen Sie Inhalte aus** – Bei Text einfach markieren; bei Bildern einen Screenshot machen oder das Bild in die Zwischenablage kopieren.
-4. **Verwenden Sie Hotkeys** – Drücken Sie die entsprechende Tastenkombination, um eine Aktion auszuführen.
-5. **Sehen Sie die Ergebnisse** – Der verarbeitete Inhalt wird automatisch wieder eingefügt.
+1. **Starten Sie ClipGen** – Führen Sie `python ClipGen.py` aus. Die Anwendung wird in den System-Tray minimiert.
+2. **Wählen Sie Inhalte aus** – Bei Text einfach markieren; bei Bildern einen Screenshot machen oder das Bild in die Zwischenablage kopieren.
+3. **Verwenden Sie Hotkeys** – Drücken Sie die entsprechende Tastenkombination, um eine Aktion auszuführen (z.B. `Strg+F1` für Korrektur).
+4. **Sehen Sie die Ergebnisse** – Der verarbeitete Inhalt wird automatisch wieder in die Zwischenablage kopiert und eingefügt.
 
 ## ⚙️ Anpassung & KI-Anbieter
 
-Sie können ClipGen umfassend anpassen, indem Sie die Datei `settings.json` bearbeiten oder die Benutzeroberfläche verwenden.
+Sie können ClipGen umfassend über den "Einstellungen"-Tab in der Anwendung anpassen.
 
 ### Allgemeine Einstellungen
-- `provider`: Der aktive KI-Anbieter (`gemini`, `groq`, `mistral`, `ollama`).
-- `autostart`: Setzen Sie dies auf `true`, damit ClipGen beim Windows-Start gestartet wird.
-- `show_hide_hotkey`: Der globale Hotkey zum Anzeigen oder Verstecken des Anwendungsfensters.
-- `font_size`: Die Schriftgröße für den Log-Textbereich.
+- **KI-Anbieter**: Wählen Sie den aktiven KI-Dienst (`Gemini`, `Groq`, `Mistral`, `Ollama`).
 
 ### Anbieter-Einstellungen
-Im Abschnitt `providers` können Sie jeden Dienst konfigurieren:
+Im entsprechenden Bereich können Sie jeden Dienst konfigurieren:
 - **Gemini**:
   - `api_key`: Ihr Google AI Studio API-Schlüssel.
-  - `model`: Das zu verwendende Modell (z. B. `gemini-1.5-flash-latest`).
 - **Groq**:
   - `api_key`: Ihr GroqCloud API-Schlüssel.
   - `model`: Das zu verwendende Modell (z. B. `llama3-8b-8192`).
@@ -126,11 +105,11 @@ Im Abschnitt `providers` können Sie jeden Dienst konfigurieren:
   - `model`: Der Name des lokalen Modells, das Sie verwenden möchten (z. B. `llama3`).
 
 ### Hotkeys
-Passen Sie die KI-Aktionen in der `hotkeys`-Liste an:
-- `combination`: Die Tastenkombination.
-- `name`: Anzeigename in der Benutzeroberfläche.
-- `log_color`: Farbe im Anwendungsprotokoll.
-- `prompt`: Die Anweisung, die an die KI gesendet wird.
+Passen Sie die KI-Aktionen direkt in der Oberfläche an:
+- **Tastenkombination**: Klicken Sie auf das Feld und geben Sie eine neue Kombination ein.
+- **Aktionsname**: Der Anzeigename in der Benutzeroberfläche.
+- **Prompt**: Die Anweisung, die an die KI gesendet wird.
+- **Farbe in Logs**: Die Farbe für die Darstellung im Log-Fenster der Anwendung.
 
 ## 🚀 Warum ClipGen?
 
@@ -142,7 +121,7 @@ Bei der Verwendung von Cloud-basierten Anbietern (Gemini, Groq, Mistral) werden 
 
 ## 📄 Lizenz
 
-Dieses Projekt ist unter der MIT-Lizenz lizenziert – siehe die LIZENZ-Datei für Details.
+Dieses Projekt ist unter der MIT-Lizenz lizenziert.
 
 ## 👨‍💻 Über den Autor
 
