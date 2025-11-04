@@ -1,10 +1,10 @@
 import os
 import sys
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
-                          QTextBrowser, QTabWidget, QLineEdit, QTextEdit, QLabel, QScrollArea, 
+from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
+                          QTextBrowser, QTabWidget, QLineEdit, QTextEdit, QLabel, QScrollArea,
                           QFrame, QDialog, QColorDialog, QComboBox, QKeySequenceEdit, QMessageBox,
-                          QSizeGrip)
+                          QSizeGrip, QSystemTrayIcon, QMenu)
 from PyQt5.QtGui import QTextCursor, QColor, QIcon
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint, QSize
 
@@ -12,6 +12,7 @@ import pyperclip
 
 class ClipGenView(QMainWindow):
     log_signal = pyqtSignal(str, str)  # Сигнал для логирования: сообщение, цвет
+    quit_signal = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -52,7 +53,22 @@ class ClipGenView(QMainWindow):
         self.resizing = False
         self.resize_edge = None
 
-        # Основной виджет
+        # Инициализация иконки в трее
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(self.windowIcon())
+        self.tray_icon.setToolTip("ClipGen")
+
+        # Erstellen des Kontextmenüs
+        tray_menu = QMenu()
+        show_action = tray_menu.addAction("Anzeigen")
+        show_action.triggered.connect(self.showNormal)
+        quit_action = tray_menu.addAction("Beenden")
+        quit_action.triggered.connect(self.quit_app)
+        self.tray_icon.setContextMenu(tray_menu)
+
+        self.tray_icon.activated.connect(self.on_tray_icon_activated)
+
+        # Haupt-Widget
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout = QVBoxLayout(self.central_widget)
@@ -909,3 +925,20 @@ class ClipGenView(QMainWindow):
             self.hotkey_combos[new_combo] = self.hotkey_combos.pop(old_combo)
         if old_combo in self.buttons:
             self.buttons[new_combo] = self.buttons.pop(old_combo)
+
+    def on_tray_icon_activated(self, reason):
+        if reason == QSystemTrayIcon.Trigger:  # Одиночный клик
+            self.showNormal()
+            self.activateWindow()
+        elif reason == QSystemTrayIcon.DoubleClick:  # Двойной клик
+            self.showNormal()
+            self.activateWindow()
+
+    def closeEvent(self, event):
+        event.ignore()
+        self.hide()
+        self.tray_icon.show()
+
+    def quit_app(self):
+        self.tray_icon.hide()
+        self.quit_signal.emit()

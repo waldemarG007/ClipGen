@@ -74,6 +74,7 @@ class ClipGen(ClipGenView):
 
         # Тестовое сообщение
         self.log_signal.emit("ClipGen запущен", "#FFFFFF")
+        self.quit_signal.connect(self.real_closeEvent)
         
     # В файле ClipGen.py замените метод create_log_handler следующим кодом:
 
@@ -401,13 +402,15 @@ class ClipGen(ClipGenView):
 
         threading.Thread(target=queue_worker, daemon=True).start()
 
-    def closeEvent(self, event):
+    def real_closeEvent(self):
         self.save_settings()
         self.stop_event.set()
         if self.listener_thread.is_alive():
             self.listener_thread.join(timeout=1.0)
-        event.accept()
-        os._exit(0)
+        QApplication.instance().quit()
+
+    def closeEvent(self, event):
+        super().closeEvent(event)
 
 # Добавить новую функцию перед функцией main:
 def set_dark_titlebar(hwnd):
@@ -432,5 +435,6 @@ if __name__ == "__main__":
     # Применяем темную тему для заголовка Windows
     set_dark_titlebar(int(window.winId()))
     
-    window.show()
+    window.hide()
+    window.tray_icon.show()
     sys.exit(app.exec_())

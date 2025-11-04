@@ -226,3 +226,42 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - [Google Generative AI](https://github.com/google/generative-ai-python) for the Gemini API and free tier access
 - [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) for the modern UI components
+
+## 🚀 Automatischer Start unter Windows
+
+Um ClipGen automatisch beim Start von Windows im Hintergrund auszuführen, ohne eine `.exe`-Datei zu erstellen, können Sie eine der folgenden Methoden verwenden.
+
+### Methode 1: Verwendung einer Batch-Datei
+
+1.  **Erstellen Sie eine Batch-Datei:**
+    *   Öffnen Sie einen Texteditor (z. B. Notepad).
+    *   Fügen Sie den folgenden Befehl in die Datei ein und ersetzen Sie `"C:\Pfad\zu\Ihrem\Projekt\ClipGen"` durch den vollständigen Pfad zum Projektverzeichnis:
+        ```batch
+        @echo off
+        start "" pythonw "C:\Pfad\zu\Ihrem\Projekt\ClipGen\ClipGen.py"
+        ```
+    *   Speichern Sie die Datei mit der Endung `.bat`, zum Beispiel `ClipGen_start.bat`.
+
+2.  **Fügen Sie die Batch-Datei zum Autostart-Ordner hinzu:**
+    *   Drücken Sie `Win + R`, um das "Ausführen"-Dialogfeld zu öffnen.
+    *   Geben Sie `shell:startup` ein und drücken Sie `Enter`.
+    *   Kopieren Sie die erstellte `.bat`-Datei in diesen Ordner.
+
+### Methode 2: Verwendung eines VBScripts
+
+1.  **Erstellen Sie ein VBScript:**
+    *   Öffnen Sie einen Texteditor.
+    *   Fügen Sie den folgenden Code in die Datei ein und ersetzen Sie `"C:\Pfad\zu\Ihrem\Projekt\ClipGen\ClipGen.py"` durch den vollständigen Pfad zur `ClipGen.py`-Datei:
+        ```vbscript
+        Set WshShell = CreateObject("WScript.Shell")
+        WshShell.Run "pythonw ""C:\Pfad\zu\Ihrem\Projekt\ClipGen\ClipGen.py""", 0
+        Set WshShell = Nothing
+        ```
+    *   Speichern Sie die Datei mit der Endung `.vbs`, zum Beispiel `ClipGen_start.vbs`.
+
+2.  **Fügen Sie das VBScript zum Autostart-Ordner hinzu:**
+    *   Drücken Sie `Win + R`, um das "Ausführen"-Dialogfeld zu öffnen.
+    *   Geben Sie `shell:startup` ein und drücken Sie `Enter`.
+    *   Kopieren Sie die erstellte `.vbs`-Datei in diesen Ordner.
+
+Beide Methoden starten die Anwendung ohne ein sichtbares Konsolenfenster, und dank der neuen Funktion wird sie direkt im System-Tray minimiert.
