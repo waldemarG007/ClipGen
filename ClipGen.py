@@ -10,12 +10,13 @@ import pyperclip
 from PIL import ImageGrab
 import google.generativeai as genai
 from google.generativeai import GenerationConfig
+import win32api
+import win32con
 from pynput import keyboard as pkb
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint
 from PyQt5.QtWidgets import QApplication
-from groq import Groq
-from mistralai.client import MistralClient
-import ollama
+import ctypes
+from ctypes import windll, c_bool, c_int, byref, POINTER, Structure
 from libs.ClipGen_view import ClipGenView
 
 # Настройка логирования
@@ -49,14 +50,13 @@ class ClipGen(ClipGenView):
         self.load_settings()
         
         # Инициализируем представление
-        super().__init__(self)
-        self.setting_changed.connect(self.update_setting)
+        super().__init__()
         
         # Инициализация Gemini
-        self.configure_ai_provider()
+        genai.configure(api_key=self.config["api_key"])
         self.queue = Queue()
         self.stop_event = threading.Event()
-
+        
         # Перехват горячих клавиш
         self.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
         self.key_states["ctrl"] = False
@@ -183,13 +183,17 @@ class ClipGen(ClipGenView):
             if hasattr(handler, 'action_colors'):
                 handler.action_colors = {k["name"]: k["log_color"] for k in self.config["hotkeys"]}
 
+    def update_api_key(self, text):
+        self.config["api_key"] = text
+        genai.configure(api_key=text)
+        self.save_settings()
+
     def update_prompt(self, hotkey, text):
         for h in self.config["hotkeys"]:
             if h["combination"] == hotkey["combination"]:
                 h["prompt"] = text
                 break
         self.save_settings()
-        self.restart_hotkey_listener()
 
     def update_name(self, hotkey, text):
         for h in self.config["hotkeys"]:
@@ -200,7 +204,6 @@ class ClipGen(ClipGenView):
                 self.update_logger_colors()
                 break
         self.save_settings()
-        self.restart_hotkey_listener()
 
     # В файле ClipGen.py, изменим метод update_color:
 
@@ -215,7 +218,6 @@ class ClipGen(ClipGenView):
                 
                 break
         self.save_settings()
-        self.restart_hotkey_listener()
         
     def update_hotkey(self, old_combo, new_combo):
         for h in self.config["hotkeys"]:
@@ -228,14 +230,6 @@ class ClipGen(ClipGenView):
                 self.update_buttons()
                 break
         self.save_settings()
-        self.restart_hotkey_listener()
-
-    def restart_hotkey_listener(self):
-        self.stop_event.set()
-        self.listener_thread.join()
-        self.stop_event = threading.Event()
-        self.listener_thread = threading.Thread(target=self.hotkey_listener, args=(self.queue,), daemon=True)
-        self.listener_thread.start()
 
     def hotkey_listener(self, queue):
         def on_press(key, queue):
@@ -315,105 +309,12 @@ class ClipGen(ClipGenView):
             self.stop_event.wait()
             listener.stop()
 
-    def update_setting(self, keys):
-        """Updates a nested setting in the config."""
-        value = keys.pop()
-        d = self.config
-        for key in keys[:-1]:
-            d = d.setdefault(key, {})
-        d[keys[-1]] = value
-        self.save_settings()
-        self.configure_ai_provider()
-
-    def configure_ai_provider(self):
-        provider = self.config.get("general", {}).get("provider", "Gemini")
-
-        if provider == "Gemini":
-            api_key = self.config.get("providers", {}).get("gemini", {}).get("api_key")
-            if api_key:
-                genai.configure(api_key=api_key)
-        elif provider == "Groq":
-            api_key = self.config.get("providers", {}).get("groq", {}).get("api_key")
-            self.groq_client = Groq(api_key=api_key)
-        elif provider == "Mistral":
-            api_key = self.config.get("providers", {}).get("mistral", {}).get("api_key")
-            self.mistral_client = MistralClient(api_key=api_key)
-        elif provider == "Ollama":
-            host = self.config.get("providers", {}).get("ollama", {}).get("host", "http://localhost:11434")
-            self.ollama_client = ollama.Client(host=host)
-
-    def process_text(self, text, action, prompt, is_image=False):
-        provider = self.config.get("general", {}).get("provider", "Gemini")
-        try:
-            if provider == "Gemini":
-                return self._process_gemini(text, action, prompt, is_image)
-            elif provider == "Groq":
-                return self._process_groq(text, action, prompt)
-            elif provider == "Mistral":
-                return self._process_mistral(text, action, prompt)
-            elif provider == "Ollama":
-                return self._process_ollama(text, action, prompt, is_image)
-            else:
-                logger.error(f"Unknown provider: {provider}")
-                return ""
-        except Exception as e:
-            logger.error(f"Error processing text with {provider}: {e}")
-            return ""
-
-    def _process_groq(self, text, action, prompt):
-        hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
-        combo = hotkey["combination"] if hotkey else ""
-        full_prompt = prompt + text
-        chat_completion = self.groq_client.chat.completions.create(
-            messages=[{"role": "user", "content": full_prompt}],
-            model=self.config.get("providers", {}).get("groq", {}).get("model", "llama3-8b-8192"),
-        )
-        result = chat_completion.choices[0].message.content
-        logger.info(f"[{combo}: {action}] Processed: {result}")
-        return result
-
-    def _process_mistral(self, text, action, prompt):
-        hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
-        combo = hotkey["combination"] if hotkey else ""
-        full_prompt = prompt + text
-        messages = [{"role": "user", "content": full_prompt}]
-        chat_response = self.mistral_client.chat(
-            model=self.config.get("providers", {}).get("mistral", {}).get("model", "mistral-large-latest"),
-            messages=messages,
-        )
-        result = chat_response.choices[0].message.content
-        logger.info(f"[{combo}: {action}] Processed: {result}")
-        return result
-
-    def _process_ollama(self, text, action, prompt, is_image=False):
-        hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
-        combo = hotkey["combination"] if hotkey else ""
-        full_prompt = prompt + text
-
-        request_data = {
-            "model": self.config.get("providers", {}).get("ollama", {}).get("model", "llama3"),
-            "prompt": full_prompt,
-            "stream": False
-        }
-
-        if is_image:
-            image = ImageGrab.grabclipboard()
-            if not image:
-                logger.warning(f"[{combo}: {action}] Clipboard is empty")
-                return ""
-            request_data["images"] = [image]
-
-        response = self.ollama_client.generate(**request_data)
-        result = response['response']
-        logger.info(f"[{combo}: {action}] Processed: {result}")
-        return result
-
-    def _process_gemini(self, text, action, prompt, is_image=False):
+    def process_text_with_gemini(self, text, action, prompt, is_image=False):
         try:
             # Находим hotkey для данного действия
             hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
             combo = hotkey["combination"] if hotkey else ""
-
+            
             if is_image:
                 image = ImageGrab.grabclipboard()
                 if not image:
@@ -445,35 +346,41 @@ class ClipGen(ClipGenView):
             logger.info(f"[{combo}: {action}] Activated")
             
             # Копируем текст из буфера
-            with self.keyboard.pressed(Key.ctrl):
-                self.keyboard.press('c')
-                self.keyboard.release('c')
+            win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
+            win32api.keybd_event(ord('C'), 0, 0, 0)
+            time.sleep(0.1)
+            win32api.keybd_event(ord('C'), 0, win32con.KEYEVENTF_KEYUP, 0)
+            win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
             time.sleep(0.1)
 
             is_image = action == "Анализ изображения"
             if is_image:
-                processed_text = self.process_text("", action, prompt, is_image=True)
+                processed_text = self.process_text_with_gemini("", action, prompt, is_image=True)
             else:
                 text = pyperclip.paste()
                 if not text.strip():
                     # Пробуем снова скопировать
-                    with self.keyboard.pressed(Key.ctrl):
-                        self.keyboard.press('c')
-                        self.keyboard.release('c')
+                    win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
+                    win32api.keybd_event(ord('C'), 0, 0, 0)
+                    time.sleep(0.5)
+                    win32api.keybd_event(ord('C'), 0, win32con.KEYEVENTF_KEYUP, 0)
+                    win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
                     time.sleep(0.5)
                     text = pyperclip.paste()
                     if not text.strip():
                         logger.warning(f"[{combo}: {action}] Буфер обмена пуст после двух попыток копирования")
                         return
-                processed_text = self.process_text(text, action, prompt)
+                processed_text = self.process_text_with_gemini(text, action, prompt)
 
             if processed_text:
                 pyperclip.copy(processed_text)
 
                 time.sleep(0.3)
-                with self.keyboard.pressed(Key.ctrl):
-                    self.keyboard.press('v')
-                    self.keyboard.release('v')
+                win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
+                win32api.keybd_event(ord('V'), 0, 0, 0)
+                time.sleep(0.2)
+                win32api.keybd_event(ord('V'), 0, win32con.KEYEVENTF_KEYUP, 0)
+                win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
         except Exception as e:
             logger.error(f"[{combo}: {action}] Ошибка: {e}")
 
@@ -502,8 +409,28 @@ class ClipGen(ClipGenView):
         event.accept()
         os._exit(0)
 
+# Добавить новую функцию перед функцией main:
+def set_dark_titlebar(hwnd):
+    """Установка темной темы для стандартного заголовка Windows"""
+    try:
+        # Константы для Windows API
+        DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+        
+        # Включение темной темы для заголовка окна
+        windll.dwmapi.DwmSetWindowAttribute(
+            hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, 
+            byref(c_int(1)), ctypes.sizeof(c_int)
+        )
+    except Exception as e:
+        print(f"Не удалось установить темную тему для заголовка: {e}")
+
+# Изменить блок main:
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = ClipGen()
+    
+    # Применяем темную тему для заголовка Windows
+    set_dark_titlebar(int(window.winId()))
+    
     window.show()
     sys.exit(app.exec_())

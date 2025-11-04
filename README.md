@@ -96,17 +96,21 @@ With 1,000 daily requests, you can process hundreds of texts and extract informa
 
 5. **Run the application**
    ```
-   python ClipGen.py
+   python main.py
    ```
 
-## 📦 Building from Source
+## 📋 Requirements
 
-To create a standalone executable, run the appropriate build script for your operating system:
+Create a file named `requirements.txt` with the following content:
 
--   **Windows:** `build.bat`
--   **macOS/Linux:** `chmod +x build.sh && ./build.sh`
-
-The executable will be located in the `dist` directory.
+```
+pillow
+pyperclip
+google-generativeai
+pywin32
+pynput
+customtkinter
+```
 
 ## 🔥 How to Use
 

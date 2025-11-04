@@ -1,10 +1,10 @@
 import os
 import sys
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-                          QTextBrowser, QTabWidget, QLineEdit, QTextEdit, QLabel, QScrollArea,
+from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
+                          QTextBrowser, QTabWidget, QLineEdit, QTextEdit, QLabel, QScrollArea, 
                           QFrame, QDialog, QColorDialog, QComboBox, QKeySequenceEdit, QMessageBox,
-                          QSizeGrip, QStackedLayout)
+                          QSizeGrip)
 from PyQt5.QtGui import QTextCursor, QColor, QIcon
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint, QSize
 
@@ -12,12 +12,9 @@ import pyperclip
 
 class ClipGenView(QMainWindow):
     log_signal = pyqtSignal(str, str)  # Сигнал для логирования: сообщение, цвет
-    setting_changed = pyqtSignal(list)
 
-    def __init__(self, controller):
+    def __init__(self):
         super().__init__()
-        self.controller = controller
-        self.config = controller.config
         # Установка иконки
         icon_path = os.path.abspath("ClipGen.ico")
         if os.path.exists(icon_path):
@@ -321,127 +318,33 @@ class ClipGenView(QMainWindow):
         self.settings_layout.setSpacing(15)
         self.settings_layout.setContentsMargins(20, 20, 20, 20)
 
-        # Provider selection
-        provider_container = QFrame()
-        provider_container.setStyleSheet("background-color: #252525; border-radius: 15px; padding: 10px;")
-        provider_layout = QVBoxLayout(provider_container)
-
-        provider_label = QLabel("AI Provider:")
-        provider_layout.addWidget(provider_label)
-
-        self.provider_combo = QComboBox()
-        self.provider_combo.addItems(["Gemini", "Groq", "Mistral", "Ollama"])
-        self.provider_combo.setStyleSheet("""
-            QComboBox {
-                border-radius: 8px;
-                border: 1px solid #444444;
-                padding: 8px;
-                background-color: #2a2a2a;
-            }
-            QComboBox::drop-down {
-                border: none;
+        # Групп API ключа
+        api_key_container = QFrame()
+        api_key_container.setStyleSheet("""
+            QFrame {
+                background-color: #252525;
+                border-radius: 15px;
+                padding: 10px;
             }
         """)
-        self.provider_combo.currentIndexChanged.connect(self._update_ui_for_provider)
-        self.provider_combo.currentTextChanged.connect(
-            lambda text: self.setting_changed.emit(["general", "provider", text])
-        )
-        provider_layout.addWidget(self.provider_combo)
-        self.settings_layout.addWidget(provider_container)
+        api_key_layout = QVBoxLayout(api_key_container)
+        api_key_layout.setContentsMargins(15, 15, 15, 15)
 
-        # --- Provider-specific settings ---
-        self.provider_settings_container = QWidget()
-        self.provider_settings_layout = QStackedLayout(self.provider_settings_container)
-        self.settings_layout.addWidget(self.provider_settings_container)
+        api_key_label = QLabel("API ключ Gemini:")
+        api_key_label.setStyleSheet("margin-top: 5px;")
+        api_key_layout.addWidget(api_key_label)
 
-        self.provider_settings_frames = {}
+        self.api_key_input = QLineEdit(self.config["api_key"])
+        self.api_key_input.setStyleSheet("""
+            border-radius: 8px; 
+            border: 1px solid #444444;
+            padding: 8px;
+            background-color: #2a2a2a;
+        """)
+        self.api_key_input.textChanged.connect(self.update_api_key)
+        api_key_layout.addWidget(self.api_key_input)
 
-        # Gemini Settings
-        gemini_frame = QFrame()
-        gemini_frame.setLayout(QVBoxLayout())
-        self.gemini_api_key_input = QLineEdit(self.config.get("providers", {}).get("gemini", {}).get("api_key", ""))
-        gemini_frame.layout().addWidget(QLabel("Gemini API Key:"))
-        gemini_frame.layout().addWidget(self.gemini_api_key_input)
-        self.provider_settings_layout.addWidget(gemini_frame)
-        self.provider_settings_frames["Gemini"] = gemini_frame
-
-        # Groq Settings
-        groq_frame = QFrame()
-        groq_frame.setLayout(QVBoxLayout())
-        self.groq_api_key_input = QLineEdit(self.config.get("providers", {}).get("groq", {}).get("api_key", ""))
-        self.groq_model_input = QLineEdit(self.config.get("providers", {}).get("groq", {}).get("model", "llama3-8b-8192"))
-        groq_frame.layout().addWidget(QLabel("Groq API Key:"))
-        groq_frame.layout().addWidget(self.groq_api_key_input)
-        groq_frame.layout().addWidget(QLabel("Groq Model:"))
-        groq_frame.layout().addWidget(self.groq_model_input)
-        self.provider_settings_layout.addWidget(groq_frame)
-        self.provider_settings_frames["Groq"] = groq_frame
-
-        # Mistral Settings
-        mistral_frame = QFrame()
-        mistral_frame.setLayout(QVBoxLayout())
-        self.mistral_api_key_input = QLineEdit(self.config.get("providers", {}).get("mistral", {}).get("api_key", ""))
-        self.mistral_model_input = QLineEdit(self.config.get("providers", {}).get("mistral", {}).get("model", "mistral-large-latest"))
-        mistral_frame.layout().addWidget(QLabel("Mistral API Key:"))
-        mistral_frame.layout().addWidget(self.mistral_api_key_input)
-        mistral_frame.layout().addWidget(QLabel("Mistral Model:"))
-        mistral_frame.layout().addWidget(self.mistral_model_input)
-        self.provider_settings_layout.addWidget(mistral_frame)
-        self.provider_settings_frames["Mistral"] = mistral_frame
-
-        # Ollama Settings
-        ollama_frame = QFrame()
-        ollama_frame.setLayout(QVBoxLayout())
-        self.ollama_host_input = QLineEdit(self.config.get("providers", {}).get("ollama", {}).get("host", "http://localhost:11434"))
-        self.ollama_model_input = QLineEdit(self.config.get("providers", {}).get("ollama", {}).get("model", "llama3"))
-        ollama_frame.layout().addWidget(QLabel("Ollama Host:"))
-        ollama_frame.layout().addWidget(self.ollama_host_input)
-        ollama_frame.layout().addWidget(QLabel("Ollama Model:"))
-        ollama_frame.layout().addWidget(self.ollama_model_input)
-        self.provider_settings_layout.addWidget(ollama_frame)
-        self.provider_settings_frames["Ollama"] = ollama_frame
-
-        # Connect signals for provider settings
-        self.gemini_api_key_input.textChanged.connect(
-            lambda text: self.setting_changed.emit(["providers", "gemini", "api_key", text])
-        )
-        self.groq_api_key_input.textChanged.connect(
-            lambda text: self.setting_changed.emit(["providers", "groq", "api_key", text])
-        )
-        self.groq_model_input.textChanged.connect(
-            lambda text: self.setting_changed.emit(["providers", "groq", "model", text])
-        )
-        self.mistral_api_key_input.textChanged.connect(
-            lambda text: self.setting_changed.emit(["providers", "mistral", "api_key", text])
-        )
-        self.mistral_model_input.textChanged.connect(
-            lambda text: self.setting_changed.emit(["providers", "mistral", "model", text])
-        )
-        self.ollama_host_input.textChanged.connect(
-            lambda text: self.setting_changed.emit(["providers", "ollama", "host", text])
-        )
-        self.ollama_model_input.textChanged.connect(
-            lambda text: self.setting_changed.emit(["providers", "ollama", "model", text])
-        )
-
-        # Set initial state
-        current_provider = self.config.get("general", {}).get("provider", "Gemini")
-        self.provider_combo.setCurrentText(current_provider)
-        self._update_ui_for_provider()
-
-    def _update_ui_for_provider(self):
-        selected_provider = self.provider_combo.currentText()
-
-        # Enable/disable image analysis hotkey
-        vision_providers = ["Gemini", "Ollama"]
-        image_hotkey_name = "Анализ изображения"
-
-        for hotkey in self.config["hotkeys"]:
-            if hotkey["name"] == image_hotkey_name:
-                hotkey_combo = hotkey["combination"]
-                if hotkey_combo in self.buttons:
-                    self.buttons[hotkey_combo].setEnabled(selected_provider in vision_providers)
-                break
+        self.settings_layout.addWidget(api_key_container)
 
         # Заголовок для горячих клавиш
         hotkeys_title = QLabel("Настройка горячих клавиш")
