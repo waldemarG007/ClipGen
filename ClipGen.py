@@ -14,7 +14,7 @@ import win32api
 import win32con
 from pynput import keyboard as pkb
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QMessageBox
 import ctypes
 from ctypes import windll, c_bool, c_int, byref, POINTER, Structure
 from libs.ClipGen_view import ClipGenView
@@ -191,6 +191,7 @@ class ClipGen(ClipGenView):
         genai.configure(api_key=new_api_key)
         self.save_settings()
         self.log_signal.emit("API-Schlüssel gespeichert.", "#FFFFFF")
+        QMessageBox.information(self, "Erfolg", "Der API-Schlüssel wurde erfolgreich gespeichert.")
 
     def update_prompt(self, hotkey, text):
         for h in self.config["hotkeys"]:
