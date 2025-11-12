@@ -350,6 +350,7 @@ class ClipGenView(QMainWindow):
         api_key_label.setStyleSheet("margin-top: 5px;")
         api_key_layout.addWidget(api_key_label)
 
+        api_key_input_layout = QHBoxLayout()
         self.api_key_input = QLineEdit(self.config["api_key"])
         self.api_key_input.setStyleSheet("""
             border-radius: 8px; 
@@ -357,8 +358,23 @@ class ClipGenView(QMainWindow):
             padding: 8px;
             background-color: #2a2a2a;
         """)
-        self.api_key_input.textChanged.connect(self.update_api_key)
-        api_key_layout.addWidget(self.api_key_input)
+        api_key_input_layout.addWidget(self.api_key_input)
+
+        self.save_api_key_button = QPushButton("Speichern")
+        self.save_api_key_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3D8948;
+                color: white;
+                border-radius: 8px;
+                padding: 5px 10px;
+                max-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #2A6C34;
+            }
+        """)
+        api_key_input_layout.addWidget(self.save_api_key_button)
+        api_key_layout.addLayout(api_key_input_layout)
 
         self.settings_layout.addWidget(api_key_container)
 

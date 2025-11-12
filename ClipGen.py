@@ -75,6 +75,7 @@ class ClipGen(ClipGenView):
         # Тестовое сообщение
         self.log_signal.emit("ClipGen запущен", "#FFFFFF")
         self.quit_signal.connect(self.real_closeEvent)
+        self.save_api_key_button.clicked.connect(self.update_api_key)
         
     # В файле ClipGen.py замените метод create_log_handler следующим кодом:
 
@@ -184,10 +185,12 @@ class ClipGen(ClipGenView):
             if hasattr(handler, 'action_colors'):
                 handler.action_colors = {k["name"]: k["log_color"] for k in self.config["hotkeys"]}
 
-    def update_api_key(self, text):
-        self.config["api_key"] = text
-        genai.configure(api_key=text)
+    def update_api_key(self):
+        new_api_key = self.api_key_input.text()
+        self.config["api_key"] = new_api_key
+        genai.configure(api_key=new_api_key)
         self.save_settings()
+        self.log_signal.emit("API-Schlüssel gespeichert.", "#FFFFFF")
 
     def update_prompt(self, hotkey, text):
         for h in self.config["hotkeys"]:

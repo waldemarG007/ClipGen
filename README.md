@@ -14,7 +14,7 @@ ClipGen is a powerful desktop utility that transforms how you interact with text
 ![ClipGen in action](screenshots/clipgen-demo.gif)
 <!-- ^ Add a screen recording showing how quickly you can copy text and transform it -->
 **[Download ClipGen here](http://vetaone.site/ClipGen/ClipGen.zip)**  
-*Important: Don’t forget to replace the API key in both configuration files (`config_en.json` and `config_ru.json`) with your own! You can get a free API key at [Google AI Studio](https://aistudio.google.com/u/0/apikey).*
+*Important: Don’t forget to replace the API key in the `settings.json` configuration file with your own! You can get a free API key at [Google AI Studio](https://aistudio.google.com/u/0/apikey).*
 
 ## 💰 Completely FREE to Use!
 
@@ -83,7 +83,7 @@ With 1,000 daily requests, you can process hundreds of texts and extract informa
    - You'll get 1,000 free requests per day with this key!
 
 4. **Configure ClipGen**
-   - Open `config_en.json` or `config_ru.json` in a text editor (depending on your preferred language)
+   - Open `settings.json` in a text editor.
    - Replace the placeholder API key with your own:
      ```json
      {
@@ -96,7 +96,7 @@ With 1,000 daily requests, you can process hundreds of texts and extract informa
 
 5. **Run the application**
    ```
-   python main.py
+   python ClipGen.py
    ```
 
 ## 📋 Requirements
@@ -143,7 +143,7 @@ customtkinter
 
 ## ⚙️ Customization
 
-You can customize ClipGen extensively by editing the configuration files:
+You can customize ClipGen extensively by editing the `settings.json` file:
 
 ```json
 {
@@ -160,13 +160,6 @@ You can customize ClipGen extensively by editing the configuration files:
     ]
 }
 ```
-
-ClipGen supports multiple languages and configurations:
-- Use `config_en.json` for English interface and prompts
-- Use `config_ru.json` for Russian interface and prompts
-- Create your own language file by duplicating and modifying these files
-- You can even use multiple API keys if you need more than 1,000 requests per day
-
 Each aspect can be customized:
 - `combination`: The keyboard shortcut
 - `name`: Display name in the UI
