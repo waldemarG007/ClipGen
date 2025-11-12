@@ -50,4 +50,3 @@ htmlcov/
 .coverage.*
 coverage.xml
 *.cover
-ClipGen.bat
