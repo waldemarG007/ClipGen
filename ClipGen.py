@@ -11,7 +11,6 @@ from PIL import ImageGrab
 import google.generativeai as genai
 from google.generativeai import GenerationConfig
 from mistralai.client import MistralClient
-from mistralai.models.chat_completion import ChatMessage
 import win32api
 import win32con
 from pynput import keyboard as pkb
@@ -383,7 +382,7 @@ class ClipGen(ClipGenView):
         combo = hotkey["combination"] if hotkey else ""
         try:
             messages = [
-                ChatMessage(role="user", content=prompt + text)
+                {"role": "user", "content": prompt + text}
             ]
             chat_response = self.mistral_client.chat(
                 model=model,
