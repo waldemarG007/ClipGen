@@ -10,7 +10,7 @@ import pyperclip
 from PIL import ImageGrab
 import google.generativeai as genai
 from google.generativeai import GenerationConfig
-from mistralai.client import MistralClient
+from mistralai import Mistral
 import win32api
 import win32con
 from pynput import keyboard as pkb
@@ -56,7 +56,7 @@ class ClipGen(ClipGenView):
         
         # Инициализация Gemini
         genai.configure(api_key=self.config["gemini_api_key"])
-        self.mistral_client = MistralClient(api_key=self.config["mistral_api_key"])
+        self.mistral_client = Mistral(api_key=self.config["mistral_api_key"])
         self.queue = Queue()
         self.stop_event = threading.Event()
         
@@ -212,7 +212,7 @@ class ClipGen(ClipGenView):
     def update_mistral_api_key(self):
         new_api_key = self.mistral_api_key_input.text()
         self.config["mistral_api_key"] = new_api_key
-        self.mistral_client = MistralClient(api_key=new_api_key)
+        self.mistral_client = Mistral(api_key=new_api_key)
         self.save_settings()
         self.log_signal.emit("Mistral API-Schlüssel gespeichert.", "#FFFFFF")
         QMessageBox.information(self, "Erfolg", "Der Mistral API-Schlüssel wurde erfolgreich gespeichert.")
@@ -384,7 +384,7 @@ class ClipGen(ClipGenView):
             messages = [
                 {"role": "user", "content": prompt + text}
             ]
-            chat_response = self.mistral_client.chat(
+            chat_response = self.mistral_client.chat.complete(
                 model=model,
                 messages=messages,
             )
@@ -420,7 +420,7 @@ class ClipGen(ClipGenView):
             else:
                 text = pyperclip.paste()
                 if not text.strip():
-                    time.sleep(0.5)
+                    time.sleep(0.5) # Даем время буферу обновиться
                     text = pyperclip.paste()
                     if not text.strip():
                         logger.warning(f"[{combo}: {action}] Clipboard is empty after two retries.")
