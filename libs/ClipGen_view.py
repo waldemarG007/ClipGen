@@ -346,22 +346,22 @@ class ClipGenView(QMainWindow):
         api_key_layout = QVBoxLayout(api_key_container)
         api_key_layout.setContentsMargins(15, 15, 15, 15)
 
-        api_key_label = QLabel("API ключ Gemini:")
-        api_key_label.setStyleSheet("margin-top: 5px;")
-        api_key_layout.addWidget(api_key_label)
+        gemini_api_key_label = QLabel("API ключ Gemini:")
+        gemini_api_key_label.setStyleSheet("margin-top: 5px;")
+        api_key_layout.addWidget(gemini_api_key_label)
 
-        api_key_input_layout = QHBoxLayout()
-        self.api_key_input = QLineEdit(self.config["api_key"])
-        self.api_key_input.setStyleSheet("""
+        gemini_api_key_input_layout = QHBoxLayout()
+        self.gemini_api_key_input = QLineEdit(self.config["gemini_api_key"])
+        self.gemini_api_key_input.setStyleSheet("""
             border-radius: 8px; 
             border: 1px solid #444444;
             padding: 8px;
             background-color: #2a2a2a;
         """)
-        api_key_input_layout.addWidget(self.api_key_input)
+        gemini_api_key_input_layout.addWidget(self.gemini_api_key_input)
 
-        self.save_api_key_button = QPushButton("Speichern")
-        self.save_api_key_button.setStyleSheet("""
+        self.save_gemini_api_key_button = QPushButton("Speichern")
+        self.save_gemini_api_key_button.setStyleSheet("""
             QPushButton {
                 background-color: #3D8948;
                 color: white;
@@ -373,8 +373,38 @@ class ClipGenView(QMainWindow):
                 background-color: #2A6C34;
             }
         """)
-        api_key_input_layout.addWidget(self.save_api_key_button)
-        api_key_layout.addLayout(api_key_input_layout)
+        gemini_api_key_input_layout.addWidget(self.save_gemini_api_key_button)
+        api_key_layout.addLayout(gemini_api_key_input_layout)
+
+        mistral_api_key_label = QLabel("API ключ Mistral:")
+        mistral_api_key_label.setStyleSheet("margin-top: 15px;")
+        api_key_layout.addWidget(mistral_api_key_label)
+
+        mistral_api_key_input_layout = QHBoxLayout()
+        self.mistral_api_key_input = QLineEdit(self.config["mistral_api_key"])
+        self.mistral_api_key_input.setStyleSheet("""
+            border-radius: 8px;
+            border: 1px solid #444444;
+            padding: 8px;
+            background-color: #2a2a2a;
+        """)
+        mistral_api_key_input_layout.addWidget(self.mistral_api_key_input)
+
+        self.save_mistral_api_key_button = QPushButton("Speichern")
+        self.save_mistral_api_key_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3D8948;
+                color: white;
+                border-radius: 8px;
+                padding: 5px 10px;
+                max-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #2A6C34;
+            }
+        """)
+        mistral_api_key_input_layout.addWidget(self.save_mistral_api_key_button)
+        api_key_layout.addLayout(mistral_api_key_input_layout)
 
         self.settings_layout.addWidget(api_key_container)
 
@@ -455,6 +485,27 @@ class ClipGenView(QMainWindow):
             name_input.textChanged.connect(lambda text, h=hotkey: self.update_name(h, text))
             hotkey_layout.addWidget(name_input)
             self.name_inputs[hotkey["combination"]] = name_input
+
+            # API Provider and Model selection
+            api_model_layout = QHBoxLayout()
+
+            api_provider_combo = QComboBox()
+            api_provider_combo.addItems(["Gemini", "Mistral"])
+            api_provider_combo.setCurrentText(hotkey.get("api_provider", "Gemini"))
+            api_provider_combo.currentTextChanged.connect(lambda text, h=hotkey: self.update_api_provider(h, text))
+            api_model_layout.addWidget(api_provider_combo)
+
+            model_input = QLineEdit(hotkey.get("model", ""))
+            model_input.setStyleSheet("""
+                border-radius: 8px;
+                border: 1px solid #444444;
+                padding: 8px;
+                background-color: #2a2a2a;
+            """)
+            model_input.textChanged.connect(lambda text, h=hotkey: self.update_model(h, text))
+            api_model_layout.addWidget(model_input)
+
+            hotkey_layout.addLayout(api_model_layout)
             
             # Поле для промпта
             prompt_label = QLabel("Промпт:")

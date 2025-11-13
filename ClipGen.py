@@ -10,6 +10,8 @@ import pyperclip
 from PIL import ImageGrab
 import google.generativeai as genai
 from google.generativeai import GenerationConfig
+from mistralai.client import MistralClient
+from mistralai.models.chat_completion import ChatMessage
 import win32api
 import win32con
 from pynput import keyboard as pkb
@@ -31,16 +33,17 @@ logger.addHandler(console_handler)
 
 # Начальная конфигурация
 DEFAULT_CONFIG = {
-    "api_key": "YOUR_API_KEY_HERE",
+    "gemini_api_key": "YOUR_API_KEY_HERE",
+    "mistral_api_key": "YOUR_API_KEY_HERE",
     "hotkeys": [
-        {"combination": "Ctrl+F1", "name": "Коррекция", "log_color": "#FFFFFF", "prompt": "Пожалуйста, исправь следующий текст..."},
-        {"combination": "Ctrl+F2", "name": "Переписать", "log_color": "#A3BFFA", "prompt": "Пожалуйста, исправь следующий текст, если нужно..."},
-        {"combination": "Ctrl+F3", "name": "Перевод", "log_color": "#FBB6CE", "prompt": "Пожалуйста, переведи следующий текст на русский язык..."},
-        {"combination": "Ctrl+F6", "name": "Объяснение", "log_color": "#FAF089", "prompt": "Пожалуйста, объясни следующий текст простыми словами..."},
-        {"combination": "Ctrl+F7", "name": "Ответ на вопрос", "log_color": "#FBD38D", "prompt": "Пожалуйста, ответь на следующий вопрос..."},
-        {"combination": "Ctrl+F8", "name": "Просьба", "log_color": "#B5EAD7", "prompt": "Выполни просьбу пользователя..."},
-        {"combination": "Ctrl+F9", "name": "Комментарий", "log_color": "#D6BCFA", "prompt": "Генерируй саркастичные комментарии..."},
-        {"combination": "Ctrl+F10", "name": "Анализ изображения", "log_color": "#A1CFF9", "prompt": "Анализируй изображение..."}
+        {"combination": "Ctrl+F1", "name": "Коррекция", "log_color": "#FFFFFF", "prompt": "Пожалуйста, исправь следующий текст...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
+        {"combination": "Ctrl+F2", "name": "Переписать", "log_color": "#A3BFFA", "prompt": "Пожалуйста, исправь следующий текст, если нужно...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
+        {"combination": "Ctrl+F3", "name": "Перевод", "log_color": "#FBB6CE", "prompt": "Пожалуйста, переведи следующий текст на русский язык...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
+        {"combination": "Ctrl+F6", "name": "Объяснение", "log_color": "#FAF089", "prompt": "Пожалуйста, объясни следующий текст простыми словами...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
+        {"combination": "Ctrl+F7", "name": "Ответ на вопрос", "log_color": "#FBD38D", "prompt": "Пожалуйста, ответь на следующий вопрос...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
+        {"combination": "Ctrl+F8", "name": "Просьба", "log_color": "#B5EAD7", "prompt": "Выполни просьбу пользователя...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
+        {"combination": "Ctrl+F9", "name": "Комментарий", "log_color": "#D6BCFA", "prompt": "Генерируй саркастичные комментарии...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
+        {"combination": "Ctrl+F10", "name": "Анализ изображения", "log_color": "#A1CFF9", "prompt": "Анализируй изображение...", "api_provider": "Gemini", "model": "gemini-1.5-flash"}
     ]
 }
 
@@ -53,7 +56,8 @@ class ClipGen(ClipGenView):
         super().__init__()
         
         # Инициализация Gemini
-        genai.configure(api_key=self.config["api_key"])
+        genai.configure(api_key=self.config["gemini_api_key"])
+        self.mistral_client = MistralClient(api_key=self.config["mistral_api_key"])
         self.queue = Queue()
         self.stop_event = threading.Event()
         
@@ -75,7 +79,8 @@ class ClipGen(ClipGenView):
         # Тестовое сообщение
         self.log_signal.emit("ClipGen запущен", "#FFFFFF")
         self.quit_signal.connect(self.real_closeEvent)
-        self.save_api_key_button.clicked.connect(self.update_api_key)
+        self.save_gemini_api_key_button.clicked.connect(self.update_gemini_api_key)
+        self.save_mistral_api_key_button.clicked.connect(self.update_mistral_api_key)
         
     # В файле ClipGen.py замените метод create_log_handler следующим кодом:
 
@@ -170,6 +175,18 @@ class ClipGen(ClipGenView):
         try:
             with open("settings.json", "r", encoding="utf-8") as f:
                 self.config = json.load(f)
+            if "gemini_api_key" not in self.config:
+                self.config["gemini_api_key"] = self.config.get("api_key", "YOUR_API_KEY_HERE")
+            if "mistral_api_key" not in self.config:
+                self.config["mistral_api_key"] = "YOUR_API_KEY_HERE"
+            if "api_key" in self.config:
+                del self.config["api_key"]
+            for hotkey in self.config["hotkeys"]:
+                if "api_provider" not in hotkey:
+                    hotkey["api_provider"] = "Gemini"
+                if "model" not in hotkey:
+                    hotkey["model"] = "gemini-1.5-flash"
+            self.save_settings()
         except FileNotFoundError:
             self.config = DEFAULT_CONFIG.copy()
             self.save_settings()
@@ -185,18 +202,40 @@ class ClipGen(ClipGenView):
             if hasattr(handler, 'action_colors'):
                 handler.action_colors = {k["name"]: k["log_color"] for k in self.config["hotkeys"]}
 
-    def update_api_key(self):
-        new_api_key = self.api_key_input.text()
-        self.config["api_key"] = new_api_key
+    def update_gemini_api_key(self):
+        new_api_key = self.gemini_api_key_input.text()
+        self.config["gemini_api_key"] = new_api_key
         genai.configure(api_key=new_api_key)
         self.save_settings()
-        self.log_signal.emit("API-Schlüssel gespeichert.", "#FFFFFF")
-        QMessageBox.information(self, "Erfolg", "Der API-Schlüssel wurde erfolgreich gespeichert.")
+        self.log_signal.emit("Gemini API-Schlüssel gespeichert.", "#FFFFFF")
+        QMessageBox.information(self, "Erfolg", "Der Gemini API-Schlüssel wurde erfolgreich gespeichert.")
+
+    def update_mistral_api_key(self):
+        new_api_key = self.mistral_api_key_input.text()
+        self.config["mistral_api_key"] = new_api_key
+        self.mistral_client = MistralClient(api_key=new_api_key)
+        self.save_settings()
+        self.log_signal.emit("Mistral API-Schlüssel gespeichert.", "#FFFFFF")
+        QMessageBox.information(self, "Erfolg", "Der Mistral API-Schlüssel wurde erfolgreich gespeichert.")
 
     def update_prompt(self, hotkey, text):
         for h in self.config["hotkeys"]:
             if h["combination"] == hotkey["combination"]:
                 h["prompt"] = text
+                break
+        self.save_settings()
+
+    def update_api_provider(self, hotkey, provider):
+        for h in self.config["hotkeys"]:
+            if h["combination"] == hotkey["combination"]:
+                h["api_provider"] = provider
+                break
+        self.save_settings()
+
+    def update_model(self, hotkey, model):
+        for h in self.config["hotkeys"]:
+            if h["combination"] == hotkey["combination"]:
+                h["model"] = model
                 break
         self.save_settings()
 
@@ -314,23 +353,21 @@ class ClipGen(ClipGenView):
             self.stop_event.wait()
             listener.stop()
 
-    def process_text_with_gemini(self, text, action, prompt, is_image=False):
+    def process_text_with_gemini(self, text, model, prompt, action, is_image=False):
+        hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
+        combo = hotkey["combination"] if hotkey else ""
         try:
-            # Находим hotkey для данного действия
-            hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
-            combo = hotkey["combination"] if hotkey else ""
-            
             if is_image:
                 image = ImageGrab.grabclipboard()
                 if not image:
-                    logger.warning(f"[{combo}: {action}] Буфер обмена пуст")
+                    logger.warning(f"[{combo}: {action}] Clipboard is empty")
                     return ""
-                response = genai.GenerativeModel("models/gemini-2.0-flash-exp").generate_content(
+                response = genai.GenerativeModel(model).generate_content(
                     contents=[prompt, image], generation_config=GenerationConfig(temperature=0.7, max_output_tokens=2048)
                 )
             else:
                 full_prompt = prompt + text
-                response = genai.GenerativeModel("models/gemini-2.0-flash-exp").generate_content(
+                response = genai.GenerativeModel(model).generate_content(
                     full_prompt, generation_config=GenerationConfig(temperature=0.7, max_output_tokens=2048)
                 )
             
@@ -338,19 +375,34 @@ class ClipGen(ClipGenView):
             logger.info(f"[{combo}: {action}] Processed: {result}")
             return result
         except Exception as e:
-            logger.error(f"[{combo}: {action}] Ошибка при запросе к Gemini: {e}")
+            logger.error(f"[{combo}: {action}] Error requesting Gemini: {e}")
             return ""
 
-    def handle_text_operation(self, action, prompt):
-        # Находим hotkey для данного действия
+    def process_text_with_mistral(self, text, model, prompt, action):
+        hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
+        combo = hotkey["combination"] if hotkey else ""
+        try:
+            messages = [
+                ChatMessage(role="user", content=prompt + text)
+            ]
+            chat_response = self.mistral_client.chat(
+                model=model,
+                messages=messages,
+            )
+            result = chat_response.choices[0].message.content.strip()
+            logger.info(f"[{combo}: {action}] Processed: {result}")
+            return result
+        except Exception as e:
+            logger.error(f"[{combo}: {action}] Error requesting Mistral: {e}")
+            return ""
+
+    def handle_text_operation(self, action, prompt, api_provider, model):
         hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
         combo = hotkey["combination"] if hotkey else ""
         
         try:
-            # Логируем активацию действия
             logger.info(f"[{combo}: {action}] Activated")
             
-            # Копируем текст из буфера
             win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
             win32api.keybd_event(ord('C'), 0, 0, 0)
             time.sleep(0.1)
@@ -359,23 +411,26 @@ class ClipGen(ClipGenView):
             time.sleep(0.1)
 
             is_image = action == "Анализ изображения"
+            processed_text = ""
+
             if is_image:
-                processed_text = self.process_text_with_gemini("", action, prompt, is_image=True)
+                if api_provider == "Mistral":
+                    logger.warning(f"[{combo}: {action}] Image analysis is not supported by Mistral.")
+                    return
+                processed_text = self.process_text_with_gemini("", model, prompt, action, is_image=True)
             else:
                 text = pyperclip.paste()
                 if not text.strip():
-                    # Пробуем снова скопировать
-                    win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
-                    win32api.keybd_event(ord('C'), 0, 0, 0)
-                    time.sleep(0.5)
-                    win32api.keybd_event(ord('C'), 0, win32con.KEYEVENTF_KEYUP, 0)
-                    win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
                     time.sleep(0.5)
                     text = pyperclip.paste()
                     if not text.strip():
-                        logger.warning(f"[{combo}: {action}] Буфер обмена пуст после двух попыток копирования")
+                        logger.warning(f"[{combo}: {action}] Clipboard is empty after two retries.")
                         return
-                processed_text = self.process_text_with_gemini(text, action, prompt)
+
+                if api_provider == "Gemini":
+                    processed_text = self.process_text_with_gemini(text, model, prompt, action)
+                elif api_provider == "Mistral":
+                    processed_text = self.process_text_with_mistral(text, model, prompt, action)
 
             if processed_text:
                 pyperclip.copy(processed_text)
@@ -387,7 +442,7 @@ class ClipGen(ClipGenView):
                 win32api.keybd_event(ord('V'), 0, win32con.KEYEVENTF_KEYUP, 0)
                 win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
         except Exception as e:
-            logger.error(f"[{combo}: {action}] Ошибка: {e}")
+            logger.error(f"[{combo}: {action}] Error: {e}")
 
     def check_queue(self):
         def queue_worker():
@@ -397,7 +452,7 @@ class ClipGen(ClipGenView):
                     logger.info(f"Received event from queue: {event}")
                     for hotkey in self.config["hotkeys"]:
                         if hotkey["name"] == event:
-                            threading.Thread(target=self.handle_text_operation, args=(hotkey["name"], hotkey["prompt"]), daemon=True).start()
+                            threading.Thread(target=self.handle_text_operation, args=(hotkey["name"], hotkey["prompt"], hotkey["api_provider"], hotkey["model"]), daemon=True).start()
                             break
                 except Empty:
                     continue
