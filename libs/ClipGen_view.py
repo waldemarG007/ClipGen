@@ -13,6 +13,7 @@ import pyperclip
 class ClipGenView(QMainWindow):
     log_signal = pyqtSignal(str, str)  # Сигнал для логирования: сообщение, цвет
     quit_signal = pyqtSignal()
+    update_models_signal = pyqtSignal(dict)
 
     def __init__(self):
         super().__init__()
@@ -418,6 +419,7 @@ class ClipGenView(QMainWindow):
         self.name_inputs = {}
         self.color_pickers = {}
         self.hotkey_combos = {}
+        self.model_combos = {}
         for i, hotkey in enumerate(self.config["hotkeys"]):
             hotkey_card = QFrame()
             hotkey_card.setStyleSheet(f"""
@@ -492,18 +494,57 @@ class ClipGenView(QMainWindow):
             api_provider_combo = QComboBox()
             api_provider_combo.addItems(["Gemini", "Mistral"])
             api_provider_combo.setCurrentText(hotkey.get("api_provider", "Gemini"))
+            api_provider_combo.setStyleSheet("""
+                QComboBox {
+                    background-color: white;
+                    color: red;
+                    border: 1px solid #444444;
+                    border-radius: 8px;
+                    padding: 8px;
+                }
+                QComboBox::drop-down {
+                    border: none;
+                }
+                QComboBox QAbstractItemView {
+                    background-color: white;
+                    color: red;
+                    selection-background-color: #f0f0f0;
+                    selection-color: red;
+                }
+            """)
             api_provider_combo.currentTextChanged.connect(lambda text, h=hotkey: self.update_api_provider(h, text))
             api_model_layout.addWidget(api_provider_combo)
 
-            model_input = QLineEdit(hotkey.get("model", ""))
-            model_input.setStyleSheet("""
-                border-radius: 8px;
-                border: 1px solid #444444;
-                padding: 8px;
-                background-color: #2a2a2a;
+            model_combo = QComboBox()
+            model_combo.setEditable(True)
+            model_combo.setStyleSheet("""
+                QComboBox {
+                    border-radius: 8px;
+                    border: 1px solid #444444;
+                    padding: 8px;
+                    background-color: #2a2a2a;
+                }
+                QComboBox::drop-down {
+                    border: none;
+                }
             """)
-            model_input.textChanged.connect(lambda text, h=hotkey: self.update_model(h, text))
-            api_model_layout.addWidget(model_input)
+            model_combo.addItem(hotkey.get("model", ""))
+            model_combo.setCurrentText(hotkey.get("model", ""))
+            model_combo.currentTextChanged.connect(lambda text, h=hotkey: self.update_model(h, text))
+            api_model_layout.addWidget(model_combo)
+            self.model_combos[hotkey["combination"]] = model_combo
+
+            update_models_button = QPushButton("🔄")
+            update_models_button.setFixedSize(35, 35)
+            update_models_button.setStyleSheet("""
+                QPushButton {
+                    font-size: 18px;
+                    padding: 0px;
+                    border-radius: 17px;
+                }
+            """)
+            update_models_button.clicked.connect(lambda _, h=hotkey: self.update_models_for_hotkey(h))
+            api_model_layout.addWidget(update_models_button)
 
             hotkey_layout.addLayout(api_model_layout)
             
@@ -634,6 +675,9 @@ class ClipGenView(QMainWindow):
         
         # Восстанавливаем активную вкладку
         self.tabs.setCurrentIndex(current_tab_index)
+
+    def update_models_for_hotkey(self, hotkey):
+        self.update_models_signal.emit(hotkey)
 
     def update_hotkey_from_sequence(self, hotkey, sequence):
         """Обновляет комбинацию клавиш по новой записи последовательности"""
@@ -990,6 +1034,8 @@ class ClipGenView(QMainWindow):
             self.color_pickers[new_combo] = self.color_pickers.pop(old_combo)
         if old_combo in self.hotkey_combos:
             self.hotkey_combos[new_combo] = self.hotkey_combos.pop(old_combo)
+        if old_combo in self.model_combos:
+            self.model_combos[new_combo] = self.model_combos.pop(old_combo)
         if old_combo in self.buttons:
             self.buttons[new_combo] = self.buttons.pop(old_combo)
 
