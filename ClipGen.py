@@ -34,6 +34,10 @@ logger.addHandler(console_handler)
 DEFAULT_CONFIG = {
     "gemini_api_key": "YOUR_API_KEY_HERE",
     "mistral_api_key": "YOUR_API_KEY_HERE",
+    "available_models": {
+        "Gemini": ["gemini-1.5-flash", "gemini-pro"],
+        "Mistral": ["mistral-large-latest", "mistral-small-latest"]
+    },
     "hotkeys": [
         {"combination": "Ctrl+F1", "name": "Коррекция", "log_color": "#FFFFFF", "prompt": "Пожалуйста, исправь следующий текст...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
         {"combination": "Ctrl+F2", "name": "Переписать", "log_color": "#A3BFFA", "prompt": "Пожалуйста, исправь следующий текст, если нужно...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
@@ -80,6 +84,11 @@ class ClipGen(ClipGenView):
         self.quit_signal.connect(self.real_closeEvent)
         self.save_gemini_api_key_button.clicked.connect(self.update_gemini_api_key)
         self.save_mistral_api_key_button.clicked.connect(self.update_mistral_api_key)
+        self.update_models_signal.connect(self.update_models_for_hotkey)
+
+        # Füllen der Modell-Dropdowns beim Start
+        for hotkey in self.config["hotkeys"]:
+            self.update_model_combobox_for_hotkey(hotkey)
         
     # В файле ClipGen.py замените метод create_log_handler следующим кодом:
 
@@ -180,6 +189,11 @@ class ClipGen(ClipGenView):
                 self.config["mistral_api_key"] = "YOUR_API_KEY_HERE"
             if "api_key" in self.config:
                 del self.config["api_key"]
+            if "available_models" not in self.config:
+                self.config["available_models"] = {
+                    "Gemini": ["gemini-1.5-flash", "gemini-pro"],
+                    "Mistral": ["mistral-large-latest", "mistral-small-latest"]
+                }
             for hotkey in self.config["hotkeys"]:
                 if "api_provider" not in hotkey:
                     hotkey["api_provider"] = "Gemini"
@@ -228,6 +242,7 @@ class ClipGen(ClipGenView):
         for h in self.config["hotkeys"]:
             if h["combination"] == hotkey["combination"]:
                 h["api_provider"] = provider
+                self.update_model_combobox_for_hotkey(h)
                 break
         self.save_settings()
 
@@ -237,6 +252,56 @@ class ClipGen(ClipGenView):
                 h["model"] = model
                 break
         self.save_settings()
+
+    def update_model_combobox_for_hotkey(self, hotkey):
+        provider = hotkey.get("api_provider", "Gemini")
+        models = self.config.get("available_models", {}).get(provider, [])
+
+        # Finde das QComboBox-Widget für das spezifische Hotkey
+        if hotkey["combination"] in self.model_combos:
+            combo_box = self.model_combos[hotkey["combination"]]
+
+            # Blockiere Signale, um Endlosschleifen zu vermeiden
+            combo_box.blockSignals(True)
+
+            current_model = combo_box.currentText()
+            combo_box.clear()
+            combo_box.addItems(models)
+
+            # Versuche, das zuvor ausgewählte Modell wiederherzustellen
+            if current_model in models:
+                combo_box.setCurrentText(current_model)
+            elif models:
+                # Wähle das erste Modell in der Liste als Standard
+                combo_box.setCurrentIndex(0)
+
+            # Entblockiere Signale
+            combo_box.blockSignals(False)
+
+    def update_models_for_hotkey(self, hotkey):
+        provider = hotkey.get("api_provider", "Gemini")
+        new_models = []
+        try:
+            if provider == "Gemini":
+                # Korrekter Aufruf für Gemini API
+                all_models = genai.list_models()
+                new_models = sorted([m.name for m in all_models if 'generateContent' in m.supported_generation_methods])
+
+            elif provider == "Mistral":
+                res = self.mistral_client.models.list()
+                new_models = sorted([model.id for model in res.data])
+
+            if new_models:
+                self.config["available_models"][provider] = new_models
+                self.save_settings()
+                self.update_model_combobox_for_hotkey(hotkey)
+                QMessageBox.information(self, "Erfolg", f"Modellliste für {provider} erfolgreich aktualisiert.")
+            else:
+                QMessageBox.warning(self, "Fehler", f"Keine Modelle für {provider} gefunden.")
+
+        except Exception as e:
+            logger.error(f"Fehler beim Abrufen der Modelle für {provider}: {e}")
+            QMessageBox.critical(self, "API Fehler", f"Konnte Modelle für {provider} nicht abrufen. Bitte überprüfen Sie Ihren API-Schlüssel und Ihre Internetverbindung.")
 
     def update_name(self, hotkey, text):
         for h in self.config["hotkeys"]:
