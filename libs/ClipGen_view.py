@@ -519,13 +519,20 @@ class ClipGenView(QMainWindow):
             model_combo.setEditable(True)
             model_combo.setStyleSheet("""
                 QComboBox {
-                    border-radius: 8px;
+                    background-color: white;
+                    color: red;
                     border: 1px solid #444444;
+                    border-radius: 8px;
                     padding: 8px;
-                    background-color: #2a2a2a;
                 }
                 QComboBox::drop-down {
                     border: none;
+                }
+                QComboBox QAbstractItemView {
+                    background-color: white;
+                    color: red;
+                    selection-background-color: #f0f0f0;
+                    selection-color: red;
                 }
             """)
             model_combo.addItem(hotkey.get("model", ""))
