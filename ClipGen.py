@@ -35,7 +35,7 @@ DEFAULT_CONFIG = {
     "gemini_api_key": "YOUR_API_KEY_HERE",
     "mistral_api_key": "YOUR_API_KEY_HERE",
     "available_models": {
-        "Gemini": ["gemini-1.5-flash", "gemini-pro"],
+        "Gemini": ["gemini-1.5-flash", "gemini-pro", "gemini-pro-vision"],
         "Mistral": ["mistral-large-latest", "mistral-small-latest"]
     },
     "hotkeys": [
@@ -46,8 +46,8 @@ DEFAULT_CONFIG = {
         {"combination": "Ctrl+F7", "name": "Ответ на вопрос", "log_color": "#FBD38D", "prompt": "Пожалуйста, ответь на следующий вопрос...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
         {"combination": "Ctrl+F8", "name": "Просьба", "log_color": "#B5EAD7", "prompt": "Выполни просьбу пользователя...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
         {"combination": "Ctrl+F9", "name": "Комментарий", "log_color": "#D6BCFA", "prompt": "Генерируй саркастичные комментарии...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
-        {"combination": "Ctrl+F10", "name": "Анализ изображения", "log_color": "#A1CFF9", "prompt": "Анализируй изображение...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
-        {"combination": "Ctrl+F11", "name": "Текст с картинки", "log_color": "#DAF7A6", "prompt": "Extrahiere den gesamten Text aus diesem Bild. Gib ausschließlich den transkribierten Text zurück, ohne zusätzliche Kommentare oder Formatierungen.", "api_provider": "Gemini", "model": "gemini-1.5-flash"}
+        {"combination": "Ctrl+F10", "name": "Анализ изображения", "log_color": "#A1CFF9", "prompt": "Анализируй изображение...", "api_provider": "Gemini", "model": "gemini-pro-vision"},
+        {"combination": "Ctrl+F11", "name": "Текст с картинки", "log_color": "#DAF7A6", "prompt": "Extrahiere den gesamten Text aus diesem Bild. Gib ausschließlich den transkribierten Text zurück, ohne zusätzliche Kommentare oder Formatierungen.", "api_provider": "Gemini", "model": "gemini-pro-vision"}
     ]
 }
 
@@ -206,6 +206,12 @@ class ClipGen(ClipGenView):
             for default_hotkey in DEFAULT_CONFIG["hotkeys"]:
                 if default_hotkey["name"] not in existing_hotkey_names:
                     self.config["hotkeys"].append(default_hotkey)
+
+            # Migration für das Modell der Bilderkennungs-Hotkeys
+            for hotkey in self.config["hotkeys"]:
+                if hotkey["name"] in ["Анализ изображения", "Текст с картинки"]:
+                    if hotkey["model"] == "gemini-1.5-flash":
+                        hotkey["model"] = "gemini-pro-vision"
 
             self.save_settings()
         except FileNotFoundError:
