@@ -46,7 +46,8 @@ DEFAULT_CONFIG = {
         {"combination": "Ctrl+F7", "name": "Ответ на вопрос", "log_color": "#FBD38D", "prompt": "Пожалуйста, ответь на следующий вопрос...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
         {"combination": "Ctrl+F8", "name": "Просьба", "log_color": "#B5EAD7", "prompt": "Выполни просьбу пользователя...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
         {"combination": "Ctrl+F9", "name": "Комментарий", "log_color": "#D6BCFA", "prompt": "Генерируй саркастичные комментарии...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
-        {"combination": "Ctrl+F10", "name": "Анализ изображения", "log_color": "#A1CFF9", "prompt": "Анализируй изображение...", "api_provider": "Gemini", "model": "gemini-1.5-flash"}
+        {"combination": "Ctrl+F10", "name": "Анализ изображения", "log_color": "#A1CFF9", "prompt": "Анализируй изображение...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
+        {"combination": "Ctrl+F11", "name": "Текст с картинки", "log_color": "#DAF7A6", "prompt": "Extrahiere den gesamten Text aus diesem Bild. Gib ausschließlich den transkribierten Text zurück, ohne zusätzliche Kommentare oder Formatierungen.", "api_provider": "Gemini", "model": "gemini-1.5-flash"}
     ]
 }
 
@@ -199,6 +200,13 @@ class ClipGen(ClipGenView):
                     hotkey["api_provider"] = "Gemini"
                 if "model" not in hotkey:
                     hotkey["model"] = "gemini-1.5-flash"
+
+            # Migration für neue Hotkeys
+            existing_hotkey_names = {h["name"] for h in self.config["hotkeys"]}
+            for default_hotkey in DEFAULT_CONFIG["hotkeys"]:
+                if default_hotkey["name"] not in existing_hotkey_names:
+                    self.config["hotkeys"].append(default_hotkey)
+
             self.save_settings()
         except FileNotFoundError:
             self.config = DEFAULT_CONFIG.copy()
@@ -474,10 +482,10 @@ class ClipGen(ClipGenView):
             win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
             time.sleep(0.1)
 
-            is_image = action == "Анализ изображения"
+            is_image_action = action in ["Анализ изображения", "Текст с картинки"]
             processed_text = ""
 
-            if is_image:
+            if is_image_action:
                 if api_provider == "Mistral":
                     logger.warning(f"[{combo}: {action}] Image analysis is not supported by Mistral.")
                     return

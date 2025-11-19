@@ -494,6 +494,8 @@ class ClipGenView(QMainWindow):
             api_provider_combo = QComboBox()
             api_provider_combo.addItems(["Gemini", "Mistral"])
             api_provider_combo.setCurrentText(hotkey.get("api_provider", "Gemini"))
+            if hotkey["name"] == "Текст с картинки":
+                api_provider_combo.setEnabled(False)
             api_provider_combo.setStyleSheet("""
                 QComboBox {
                     background-color: white;

@@ -50,3 +50,6 @@ htmlcov/
 .coverage.*
 coverage.xml
 *.cover
+
+# Log files
+*.log
