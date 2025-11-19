@@ -516,7 +516,6 @@ class ClipGenView(QMainWindow):
             api_model_layout.addWidget(api_provider_combo)
 
             model_combo = QComboBox()
-            model_combo.setEditable(True)
             model_combo.setStyleSheet("""
                 QComboBox {
                     background-color: white;
