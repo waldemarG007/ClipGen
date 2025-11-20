@@ -39,15 +39,15 @@ DEFAULT_CONFIG = {
         "Mistral": ["mistral-large-latest", "mistral-small-latest"]
     },
     "hotkeys": [
-        {"combination": "Ctrl+F1", "name": "Коррекция", "log_color": "#FFFFFF", "prompt": "Пожалуйста, исправь следующий текст...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
-        {"combination": "Ctrl+F2", "name": "Переписать", "log_color": "#A3BFFA", "prompt": "Пожалуйста, исправь следующий текст, если нужно...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
-        {"combination": "Ctrl+F3", "name": "Перевод", "log_color": "#FBB6CE", "prompt": "Пожалуйста, переведи следующий текст на русский язык...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
-        {"combination": "Ctrl+F6", "name": "Объяснение", "log_color": "#FAF089", "prompt": "Пожалуйста, объясни следующий текст простыми словами...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
-        {"combination": "Ctrl+F7", "name": "Ответ на вопрос", "log_color": "#FBD38D", "prompt": "Пожалуйста, ответь на следующий вопрос...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
-        {"combination": "Ctrl+F8", "name": "Просьба", "log_color": "#B5EAD7", "prompt": "Выполни просьбу пользователя...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
-        {"combination": "Ctrl+F9", "name": "Комментарий", "log_color": "#D6BCFA", "prompt": "Генерируй саркастичные комментарии...", "api_provider": "Gemini", "model": "gemini-1.5-flash"},
-        {"combination": "Ctrl+F10", "name": "Анализ изображения", "log_color": "#A1CFF9", "prompt": "Анализируй изображение...", "api_provider": "Gemini", "model": "gemini-pro-vision"},
-        {"combination": "Ctrl+F11", "name": "Текст с картинки", "log_color": "#DAF7A6", "prompt": "Extrahiere den gesamten Text aus diesem Bild. Gib ausschließlich den transkribierten Text zurück, ohne zusätzliche Kommentare oder Formatierungen.", "api_provider": "Gemini", "model": "gemini-pro-vision"}
+        {"combination": "Ctrl+F1", "name": "Коррекция", "log_color": "#FFFFFF", "prompt": "Пожалуйста, исправь следующий текст...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
+        {"combination": "Ctrl+F2", "name": "Переписать", "log_color": "#A3BFFA", "prompt": "Пожалуйста, исправь следующий текст, если нужно...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
+        {"combination": "Ctrl+F3", "name": "Перевод", "log_color": "#FBB6CE", "prompt": "Пожалуйста, переведи следующий текст на русский язык...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
+        {"combination": "Ctrl+F6", "name": "Объяснение", "log_color": "#FAF089", "prompt": "Пожалуйста, объясни следующий текст простыми словами...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
+        {"combination": "Ctrl+F7", "name": "Ответ на вопрос", "log_color": "#FBD38D", "prompt": "Пожалуйста, ответь на следующий вопрос...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
+        {"combination": "Ctrl+F8", "name": "Просьба", "log_color": "#B5EAD7", "prompt": "Выполни просьбу пользователя...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
+        {"combination": "Ctrl+F9", "name": "Комментарий", "log_color": "#D6BCFA", "prompt": "Генерируй саркастичные комментарии...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
+        {"combination": "Ctrl+F10", "name": "Анализ изображения", "log_color": "#A1CFF9", "prompt": "Анализируй изображение...", "api_provider": "Gemini", "model": "gemini-pro-vision", "type": "image"},
+        {"combination": "Ctrl+F11", "name": "Текст с картинки", "log_color": "#DAF7A6", "prompt": "Extrahiere den gesamten Text aus diesem Bild. Gib ausschließlich den transkribierten Text zurück, ohne zusätzliche Kommentare oder Formatierungen.", "api_provider": "Gemini", "model": "gemini-pro-vision", "type": "image"}
     ]
 }
 
@@ -200,6 +200,13 @@ class ClipGen(ClipGenView):
                     hotkey["api_provider"] = "Gemini"
                 if "model" not in hotkey:
                     hotkey["model"] = "gemini-1.5-flash"
+
+            # Migration, um den 'type' für Hotkeys hinzuzufügen
+            default_hotkey_types = {h["combination"]: h["type"] for h in DEFAULT_CONFIG["hotkeys"]}
+            for hotkey in self.config["hotkeys"]:
+                if "type" not in hotkey:
+                    # Weisen Sie den Typ basierend auf der Standardkombination zu oder standardmäßig auf 'text'
+                    hotkey["type"] = default_hotkey_types.get(hotkey["combination"], "text")
 
             # Migration für neue Hotkeys
             existing_hotkey_names = {h["name"] for h in self.config["hotkeys"]}
@@ -474,29 +481,35 @@ class ClipGen(ClipGenView):
             logger.error(f"[{combo}: {action}] Error requesting Mistral: {e}")
             return ""
 
-    def handle_text_operation(self, action, prompt, api_provider, model):
-        hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
-        combo = hotkey["combination"] if hotkey else ""
+    def handle_text_operation(self, hotkey):
+        action = hotkey["name"]
+        prompt = hotkey["prompt"]
+        api_provider = hotkey["api_provider"]
+        model = hotkey["model"]
+        hotkey_type = hotkey.get("type", "text")
+        combo = hotkey["combination"]
         
         try:
             logger.info(f"[{combo}: {action}] Activated")
             
-            win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
-            win32api.keybd_event(ord('C'), 0, 0, 0)
-            time.sleep(0.1)
-            win32api.keybd_event(ord('C'), 0, win32con.KEYEVENTF_KEYUP, 0)
-            win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
-            time.sleep(0.1)
-
-            is_image_action = action in ["Анализ изображения", "Текст с картинки"]
+            is_image_action = hotkey_type == "image"
             processed_text = ""
 
             if is_image_action:
                 if api_provider == "Mistral":
                     logger.warning(f"[{combo}: {action}] Image analysis is not supported by Mistral.")
                     return
+                # Для операций с изображениями не симулируем Ctrl+C, предполагаем, что изображение уже в буфере обмена.
                 processed_text = self.process_text_with_gemini("", model, prompt, action, is_image=True)
             else:
+                # Для текстовых операций сначала симулируем Ctrl+C, чтобы скопировать выделенный текст.
+                win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
+                win32api.keybd_event(ord('C'), 0, 0, 0)
+                time.sleep(0.1)
+                win32api.keybd_event(ord('C'), 0, win32con.KEYEVENTF_KEYUP, 0)
+                win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
+                time.sleep(0.1)
+
                 text = pyperclip.paste()
                 if not text.strip():
                     time.sleep(0.5) # Даем время буферу обновиться
@@ -530,7 +543,7 @@ class ClipGen(ClipGenView):
                     logger.info(f"Received event from queue: {event}")
                     for hotkey in self.config["hotkeys"]:
                         if hotkey["name"] == event:
-                            threading.Thread(target=self.handle_text_operation, args=(hotkey["name"], hotkey["prompt"], hotkey["api_provider"], hotkey["model"]), daemon=True).start()
+                            threading.Thread(target=self.handle_text_operation, args=(hotkey,), daemon=True).start()
                             break
                 except Empty:
                     continue
