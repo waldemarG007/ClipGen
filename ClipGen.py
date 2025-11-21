@@ -11,6 +11,7 @@ from PIL import ImageGrab
 import google.generativeai as genai
 from google.generativeai import GenerationConfig
 from mistralai import Mistral
+from groq import Groq
 import win32api
 import win32con
 from pynput import keyboard as pkb
@@ -34,9 +35,11 @@ logger.addHandler(console_handler)
 DEFAULT_CONFIG = {
     "gemini_api_key": "YOUR_API_KEY_HERE",
     "mistral_api_key": "YOUR_API_KEY_HERE",
+    "groq_api_key": "YOUR_API_KEY_HERE",
     "available_models": {
         "Gemini": ["gemini-1.5-flash", "gemini-pro", "gemini-pro-vision"],
-        "Mistral": ["mistral-large-latest", "mistral-small-latest"]
+        "Mistral": ["mistral-large-latest", "mistral-small-latest"],
+        "Groq": []
     },
     "hotkeys": [
         {"combination": "Ctrl+F1", "name": "Коррекция", "log_color": "#FFFFFF", "prompt": "Пожалуйста, исправь следующий текст...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
@@ -62,6 +65,7 @@ class ClipGen(ClipGenView):
         # Инициализация Gemini
         genai.configure(api_key=self.config["gemini_api_key"])
         self.mistral_client = Mistral(api_key=self.config["mistral_api_key"])
+        self.groq_client = Groq(api_key=self.config.get("groq_api_key"))
         self.queue = Queue()
         self.stop_event = threading.Event()
         
@@ -85,6 +89,7 @@ class ClipGen(ClipGenView):
         self.quit_signal.connect(self.real_closeEvent)
         self.save_gemini_api_key_button.clicked.connect(self.update_gemini_api_key)
         self.save_mistral_api_key_button.clicked.connect(self.update_mistral_api_key)
+        self.save_groq_api_key_button.clicked.connect(self.update_groq_api_key)
         self.update_models_signal.connect(self.update_models_for_hotkey)
 
         # Füllen der Modell-Dropdowns beim Start
@@ -188,13 +193,19 @@ class ClipGen(ClipGenView):
                 self.config["gemini_api_key"] = self.config.get("api_key", "YOUR_API_KEY_HERE")
             if "mistral_api_key" not in self.config:
                 self.config["mistral_api_key"] = "YOUR_API_KEY_HERE"
+            if "groq_api_key" not in self.config:
+                self.config["groq_api_key"] = "YOUR_API_KEY_HERE"
             if "api_key" in self.config:
                 del self.config["api_key"]
             if "available_models" not in self.config:
                 self.config["available_models"] = {
                     "Gemini": ["gemini-1.5-flash", "gemini-pro"],
-                    "Mistral": ["mistral-large-latest", "mistral-small-latest"]
+                    "Mistral": ["mistral-large-latest", "mistral-small-latest"],
+                    "Groq": []
                 }
+            elif "Groq" not in self.config["available_models"]:
+                self.config["available_models"]["Groq"] = []
+
             for hotkey in self.config["hotkeys"]:
                 if "api_provider" not in hotkey:
                     hotkey["api_provider"] = "Gemini"
@@ -251,6 +262,14 @@ class ClipGen(ClipGenView):
         self.save_settings()
         self.log_signal.emit("Mistral API-Schlüssel gespeichert.", "#FFFFFF")
         QMessageBox.information(self, "Erfolg", "Der Mistral API-Schlüssel wurde erfolgreich gespeichert.")
+
+    def update_groq_api_key(self):
+        new_api_key = self.groq_api_key_input.text()
+        self.config["groq_api_key"] = new_api_key
+        self.groq_client = Groq(api_key=new_api_key)
+        self.save_settings()
+        self.log_signal.emit("Groq API-Schlüssel gespeichert.", "#FFFFFF")
+        QMessageBox.information(self, "Erfolg", "Der Groq API-Schlüssel wurde erfolgreich gespeichert.")
 
     def update_prompt(self, hotkey, text):
         for h in self.config["hotkeys"]:
@@ -310,6 +329,10 @@ class ClipGen(ClipGenView):
 
             elif provider == "Mistral":
                 res = self.mistral_client.models.list()
+                new_models = sorted([model.id for model in res.data])
+
+            elif provider == "Groq":
+                res = self.groq_client.models.list()
                 new_models = sorted([model.id for model in res.data])
 
             if new_models:
@@ -481,6 +504,56 @@ class ClipGen(ClipGenView):
             logger.error(f"[{combo}: {action}] Error requesting Mistral: {e}")
             return ""
 
+    def process_with_groq(self, text, model, prompt, action, is_image=False):
+        hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
+        combo = hotkey["combination"] if hotkey else ""
+        try:
+            if is_image:
+                image = ImageGrab.grabclipboard()
+                if not image:
+                    logger.warning(f"[{combo}: {action}] Clipboard is empty")
+                    return ""
+
+                # Konvertieren Sie das Bild in ein Format, das Groq akzeptiert (Base64)
+                from io import BytesIO
+                import base64
+                buffered = BytesIO()
+                image.save(buffered, format="PNG")
+                base64_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/png;base64,{base64_image}",
+                                },
+                            },
+                        ],
+                    }
+                ]
+            else:
+                 messages=[
+                    {
+                        "role": "user",
+                        "content": prompt + text,
+                    }
+                ]
+
+            chat_completion = self.groq_client.chat.completions.create(
+                messages=messages,
+                model=model,
+            )
+            result = chat_completion.choices[0].message.content.strip()
+            logger.info(f"[{combo}: {action}] Processed: {result}")
+            return result
+        except Exception as e:
+            logger.error(f"[{combo}: {action}] Error requesting Groq: {e}")
+            return ""
+
     def handle_text_operation(self, hotkey):
         action = hotkey["name"]
         prompt = hotkey["prompt"]
@@ -500,7 +573,10 @@ class ClipGen(ClipGenView):
                     logger.warning(f"[{combo}: {action}] Image analysis is not supported by Mistral.")
                     return
                 # Для операций с изображениями не симулируем Ctrl+C, предполагаем, что изображение уже в буфере обмена.
-                processed_text = self.process_text_with_gemini("", model, prompt, action, is_image=True)
+                if api_provider == "Gemini":
+                    processed_text = self.process_text_with_gemini("", model, prompt, action, is_image=True)
+                elif api_provider == "Groq":
+                    processed_text = self.process_with_groq("", model, prompt, action, is_image=True)
             else:
                 # Для текстовых операций сначала симулируем Ctrl+C, чтобы скопировать выделенный текст.
                 win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
@@ -522,6 +598,8 @@ class ClipGen(ClipGenView):
                     processed_text = self.process_text_with_gemini(text, model, prompt, action)
                 elif api_provider == "Mistral":
                     processed_text = self.process_text_with_mistral(text, model, prompt, action)
+                elif api_provider == "Groq":
+                    processed_text = self.process_with_groq(text, model, prompt, action)
 
             if processed_text:
                 pyperclip.copy(processed_text)

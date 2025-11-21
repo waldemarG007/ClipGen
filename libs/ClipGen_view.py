@@ -407,6 +407,36 @@ class ClipGenView(QMainWindow):
         mistral_api_key_input_layout.addWidget(self.save_mistral_api_key_button)
         api_key_layout.addLayout(mistral_api_key_input_layout)
 
+        groq_api_key_label = QLabel("API ключ Groq:")
+        groq_api_key_label.setStyleSheet("margin-top: 15px;")
+        api_key_layout.addWidget(groq_api_key_label)
+
+        groq_api_key_input_layout = QHBoxLayout()
+        self.groq_api_key_input = QLineEdit(self.config.get("groq_api_key", "YOUR_API_KEY_HERE"))
+        self.groq_api_key_input.setStyleSheet("""
+            border-radius: 8px;
+            border: 1px solid #444444;
+            padding: 8px;
+            background-color: #2a2a2a;
+        """)
+        groq_api_key_input_layout.addWidget(self.groq_api_key_input)
+
+        self.save_groq_api_key_button = QPushButton("Speichern")
+        self.save_groq_api_key_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3D8948;
+                color: white;
+                border-radius: 8px;
+                padding: 5px 10px;
+                max-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #2A6C34;
+            }
+        """)
+        groq_api_key_input_layout.addWidget(self.save_groq_api_key_button)
+        api_key_layout.addLayout(groq_api_key_input_layout)
+
         self.settings_layout.addWidget(api_key_container)
 
         # Заголовок для горячих клавиш
@@ -492,7 +522,7 @@ class ClipGenView(QMainWindow):
             api_model_layout = QHBoxLayout()
 
             api_provider_combo = QComboBox()
-            api_provider_combo.addItems(["Gemini", "Mistral"])
+            api_provider_combo.addItems(["Gemini", "Mistral", "Groq"])
             api_provider_combo.setCurrentText(hotkey.get("api_provider", "Gemini"))
             if hotkey["name"] == "Текст с картинки":
                 api_provider_combo.setEnabled(False)
