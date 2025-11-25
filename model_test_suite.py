@@ -14,26 +14,7 @@ SETTINGS_FILE = "settings.json"
 IMAGE_PATH = "test_images/image.png"
 PROMPT = "Extrahiere den gesamten Text aus diesem Bild. Gib ausschließlich den transkribierten Text zurück, ohne zusätzliche Kommentare oder Formatierungen."
 CSV_OUTPUT_FILE = "model_test_results.csv"
-REQUEST_PAUSE_SECONDS = 20  # Erhöht auf 20s, um Ratenbegrenzungen sicher zu umgehen
-
-# --- Feste Listen der zu testenden Vision-Modelle (basierend auf Recherche) ---
-# Hinweis: Die Gemini-API listet viele Modelle auf, wir testen nur die stabilsten Vision-Modelle.
-GEMINI_VISION_MODELS = [
-    "gemini-1.5-pro-latest",
-    "gemini-1.5-flash-latest",
-]
-
-# Mistral bietet spezifische Modelle für Bilderkennung an.
-MISTRAL_VISION_MODELS = [
-    "mistral-large-latest", # Pixtral Large ist jetzt Teil von Large
-]
-
-# Groq hat nur wenige Modelle, die Vision unterstützen.
-GROQ_VISION_MODELS = [
-    "llama3-groq-70b-8192-tool-use-preview",
-    "llama3-8b-8192-tool-use-preview"
-]
-
+REQUEST_PAUSE_SECONDS = 20
 
 # --- Hilfsfunktionen ---
 
@@ -68,6 +49,24 @@ def write_to_csv(writer, provider, model, prompt, response):
     writer.writerow([timestamp, provider, model, full_prompt, cleaned_response])
     print(f"  - Ergebnis für {model} gespeichert.")
 
+# --- Intelligente Filterfunktionen ---
+
+def get_gemini_models(client):
+    """Ruft alle Modelle ab, die generateContent unterstützen."""
+    all_models = client.list_models()
+    return [model.name for model in all_models if 'generateContent' in model.supported_generation_methods]
+
+def get_mistral_models(client):
+    """Ruft alle verfügbaren Mistral-Modelle ab."""
+    response = client.models.list()
+    return [model.id for model in response.data]
+
+def get_groq_models(client):
+    """Ruft alle verfügbaren Groq-Modelle ab."""
+    response = client.models.list()
+    return [model.id for model in response.data]
+
+
 # --- Hauptlogik ---
 
 def main():
@@ -78,21 +77,58 @@ def main():
     if not api_keys:
         return
 
+    all_models_to_test = {}
+
+    # --- Modelle abrufen und filtern ---
+    print("\n--- Rufe verfügbare Modelle von den APIs ab... ---")
+
+    # Gemini
+    gemini_api_key = api_keys.get("gemini")
+    if gemini_api_key and "YOUR_API_KEY_HERE" not in gemini_api_key:
+        try:
+            genai.configure(api_key=gemini_api_key)
+            all_models_to_test["Gemini"] = get_gemini_models(genai)
+        except Exception as e:
+            print(f"FEHLER beim Abrufen der Gemini-Modelle: {e}")
+
+    # Mistral
+    mistral_api_key = api_keys.get("mistral")
+    if mistral_api_key and "YOUR_API_KEY_HERE" not in mistral_api_key:
+        try:
+            mistral_client = MistralClient(api_key=mistral_api_key)
+            all_models_to_test["Mistral"] = get_mistral_models(mistral_client)
+        except Exception as e:
+            print(f"FEHLER beim Abrufen der Mistral-Modelle: {e}")
+
+    # Groq
+    groq_api_key = api_keys.get("groq")
+    if groq_api_key and "YOUR_API_KEY_HERE" not in groq_api_key:
+        try:
+            groq_client = Groq(api_key=groq_api_key)
+            all_models_to_test["Groq"] = get_groq_models(groq_client)
+        except Exception as e:
+            print(f"FEHLER beim Abrufen der Groq-Modelle: {e}")
+
+    # --- Verifikations-Ausgabe ---
+    print("\n--- Folgende Modelle werden getestet: ---")
+    for provider, models in all_models_to_test.items():
+        if models:
+            print(f"  - {provider}: {', '.join(models)}")
+        else:
+            print(f"  - {provider}: Keine passenden Modelle gefunden oder API-Schlüssel fehlt.")
+    print("-" * 40)
+
+
     with open(CSV_OUTPUT_FILE, 'w', newline='', encoding='utf-8') as csvfile:
         csv_writer = csv.writer(csvfile)
         csv_writer.writerow(["Zeitstempel", "Anbieter", "Modell", "Prompt", "Antwort"])
 
         # --- Gemini-Tests ---
-        print("\n--- Teste Gemini-Modelle ---")
-        gemini_api_key = api_keys.get("gemini")
-        if not gemini_api_key or "YOUR_API_KEY_HERE" in gemini_api_key:
-            print("WARNUNG: Gemini API-Schlüssel nicht konfiguriert. Überspringe Tests.")
-        else:
+        if "Gemini" in all_models_to_test:
+            print("\n--- Teste Gemini-Modelle ---")
             try:
-                genai.configure(api_key=gemini_api_key)
                 image = Image.open(IMAGE_PATH)
-
-                for model_name in GEMINI_VISION_MODELS:
+                for model_name in all_models_to_test["Gemini"]:
                     print(f"Teste Modell: {model_name}...")
                     try:
                         model = genai.GenerativeModel(model_name)
@@ -104,30 +140,19 @@ def main():
                     print(f"Warte {REQUEST_PAUSE_SECONDS} Sekunden...")
                     time.sleep(REQUEST_PAUSE_SECONDS)
             except Exception as e:
-                print(f"FEHLER bei der Initialisierung von Gemini: {e}")
+                print(f"FEHLER während der Gemini-Tests: {e}")
 
         # --- Mistral-Tests ---
-        print("\n--- Teste Mistral-Modelle ---")
-        mistral_api_key = api_keys.get("mistral")
-        if not mistral_api_key or "YOUR_API_KEY_HERE" in mistral_api_key:
-            print("WARNUNG: Mistral API-Schlüssel nicht konfiguriert. Überspringe Tests.")
-        else:
+        if "Mistral" in all_models_to_test:
+            print("\n--- Teste Mistral-Modelle ---")
             try:
                 mistral_client = MistralClient(api_key=mistral_api_key)
                 base64_image = encode_image_to_base64(IMAGE_PATH)
-
-                for model_name in MISTRAL_VISION_MODELS:
+                for model_name in all_models_to_test["Mistral"]:
                     print(f"Teste Modell: {model_name}...")
                     try:
-                        # Korrekter Aufbau für Anfragen an die Mistral-API (basierend auf Recherche)
-                        messages = [{
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": PROMPT},
-                                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}}
-                            ]
-                        }]
-                        response = mistral_client.chat(model=model_name, messages=messages)
+                        messages = [{"role": "user", "content": [{"type": "text", "text": PROMPT}, {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}}]}]
+                        response = mistral_client.chat.completions.create(model=model_name, messages=messages)
                         result = response.choices[0].message.content.strip()
                     except Exception as e:
                         result = f"FEHLER: {e}"
@@ -135,42 +160,26 @@ def main():
                     print(f"Warte {REQUEST_PAUSE_SECONDS} Sekunden...")
                     time.sleep(REQUEST_PAUSE_SECONDS)
             except Exception as e:
-                print(f"FEHLER bei der Initialisierung von Mistral: {e}")
+                print(f"FEHLER während der Mistral-Tests: {e}")
 
         # --- Groq-Tests ---
-        print("\n--- Teste Groq-Modelle ---")
-        groq_api_key = api_keys.get("groq")
-        if not groq_api_key or "YOUR_API_KEY_HERE" in groq_api_key:
-            print("WARNUNG: Groq API-Schlüssel nicht konfiguriert. Überspringe Tests.")
-        else:
+        if "Groq" in all_models_to_test:
+            print("\n--- Teste Groq-Modelle ---")
             try:
                 groq_client = Groq(api_key=groq_api_key)
                 base64_image = encode_image_to_base64(IMAGE_PATH)
-
-                if base64_image:
-                    for model_name in GROQ_VISION_MODELS:
-                        print(f"Teste Modell: {model_name}...")
-                        try:
-                            # Der Payload für Vision-Modelle ist eine Liste mit Text und Bild-URL
-                            chat_completion = groq_client.chat.completions.create(
-                                messages=[{
-                                    "role": "user",
-                                    "content": [
-                                        {"type": "text", "text": PROMPT},
-                                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}},
-                                    ],
-                                }],
-                                model=model_name,
-                            )
-                            result = chat_completion.choices[0].message.content.strip()
-                        except Exception as e:
-                            result = f"FEHLER: {e}"
-
-                        write_to_csv(csv_writer, "Groq", model_name, PROMPT, result)
-                        print(f"Warte {REQUEST_PAUSE_SECONDS} Sekunden...")
-                        time.sleep(REQUEST_PAUSE_SECONDS)
+                for model_name in all_models_to_test["Groq"]:
+                    print(f"Teste Modell: {model_name}...")
+                    try:
+                        chat_completion = groq_client.chat.completions.create(messages=[{"role": "user", "content": [{"type": "text", "text": PROMPT}, {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}}]}], model=model_name)
+                        result = chat_completion.choices[0].message.content.strip()
+                    except Exception as e:
+                        result = f"FEHLER: {e}"
+                    write_to_csv(csv_writer, "Groq", model_name, PROMPT, result)
+                    print(f"Warte {REQUEST_PAUSE_SECONDS} Sekunden...")
+                    time.sleep(REQUEST_PAUSE_SECONDS)
             except Exception as e:
-                print(f"FEHLER bei der Initialisierung von Groq: {e}")
+                print(f"FEHLER während der Groq-Tests: {e}")
 
     print(f"\nTest-Suite abgeschlossen. Ergebnisse wurden in '{CSV_OUTPUT_FILE}' gespeichert.")
 
