@@ -13,7 +13,6 @@ import pyperclip
 class ClipGenView(QMainWindow):
     log_signal = pyqtSignal(str, str)  # Сигнал для логирования: сообщение, цвет
     quit_signal = pyqtSignal()
-    update_models_signal = pyqtSignal(dict)
 
     def __init__(self):
         super().__init__()
@@ -347,95 +346,19 @@ class ClipGenView(QMainWindow):
         api_key_layout = QVBoxLayout(api_key_container)
         api_key_layout.setContentsMargins(15, 15, 15, 15)
 
-        gemini_api_key_label = QLabel("API ключ Gemini:")
-        gemini_api_key_label.setStyleSheet("margin-top: 5px;")
-        api_key_layout.addWidget(gemini_api_key_label)
+        api_key_label = QLabel("API ключ Gemini:")
+        api_key_label.setStyleSheet("margin-top: 5px;")
+        api_key_layout.addWidget(api_key_label)
 
-        gemini_api_key_input_layout = QHBoxLayout()
-        self.gemini_api_key_input = QLineEdit(self.config["gemini_api_key"])
-        self.gemini_api_key_input.setStyleSheet("""
+        self.api_key_input = QLineEdit(self.config["api_key"])
+        self.api_key_input.setStyleSheet("""
             border-radius: 8px; 
             border: 1px solid #444444;
             padding: 8px;
             background-color: #2a2a2a;
         """)
-        gemini_api_key_input_layout.addWidget(self.gemini_api_key_input)
-
-        self.save_gemini_api_key_button = QPushButton("Speichern")
-        self.save_gemini_api_key_button.setStyleSheet("""
-            QPushButton {
-                background-color: #3D8948;
-                color: white;
-                border-radius: 8px;
-                padding: 5px 10px;
-                max-width: 100px;
-            }
-            QPushButton:hover {
-                background-color: #2A6C34;
-            }
-        """)
-        gemini_api_key_input_layout.addWidget(self.save_gemini_api_key_button)
-        api_key_layout.addLayout(gemini_api_key_input_layout)
-
-        mistral_api_key_label = QLabel("API ключ Mistral:")
-        mistral_api_key_label.setStyleSheet("margin-top: 15px;")
-        api_key_layout.addWidget(mistral_api_key_label)
-
-        mistral_api_key_input_layout = QHBoxLayout()
-        self.mistral_api_key_input = QLineEdit(self.config["mistral_api_key"])
-        self.mistral_api_key_input.setStyleSheet("""
-            border-radius: 8px;
-            border: 1px solid #444444;
-            padding: 8px;
-            background-color: #2a2a2a;
-        """)
-        mistral_api_key_input_layout.addWidget(self.mistral_api_key_input)
-
-        self.save_mistral_api_key_button = QPushButton("Speichern")
-        self.save_mistral_api_key_button.setStyleSheet("""
-            QPushButton {
-                background-color: #3D8948;
-                color: white;
-                border-radius: 8px;
-                padding: 5px 10px;
-                max-width: 100px;
-            }
-            QPushButton:hover {
-                background-color: #2A6C34;
-            }
-        """)
-        mistral_api_key_input_layout.addWidget(self.save_mistral_api_key_button)
-        api_key_layout.addLayout(mistral_api_key_input_layout)
-
-        groq_api_key_label = QLabel("API ключ Groq:")
-        groq_api_key_label.setStyleSheet("margin-top: 15px;")
-        api_key_layout.addWidget(groq_api_key_label)
-
-        groq_api_key_input_layout = QHBoxLayout()
-        self.groq_api_key_input = QLineEdit(self.config.get("groq_api_key", "YOUR_API_KEY_HERE"))
-        self.groq_api_key_input.setStyleSheet("""
-            border-radius: 8px;
-            border: 1px solid #444444;
-            padding: 8px;
-            background-color: #2a2a2a;
-        """)
-        groq_api_key_input_layout.addWidget(self.groq_api_key_input)
-
-        self.save_groq_api_key_button = QPushButton("Speichern")
-        self.save_groq_api_key_button.setStyleSheet("""
-            QPushButton {
-                background-color: #3D8948;
-                color: white;
-                border-radius: 8px;
-                padding: 5px 10px;
-                max-width: 100px;
-            }
-            QPushButton:hover {
-                background-color: #2A6C34;
-            }
-        """)
-        groq_api_key_input_layout.addWidget(self.save_groq_api_key_button)
-        api_key_layout.addLayout(groq_api_key_input_layout)
+        self.api_key_input.textChanged.connect(self.update_api_key)
+        api_key_layout.addWidget(self.api_key_input)
 
         self.settings_layout.addWidget(api_key_container)
 
@@ -449,7 +372,6 @@ class ClipGenView(QMainWindow):
         self.name_inputs = {}
         self.color_pickers = {}
         self.hotkey_combos = {}
-        self.model_combos = {}
         for i, hotkey in enumerate(self.config["hotkeys"]):
             hotkey_card = QFrame()
             hotkey_card.setStyleSheet(f"""
@@ -517,74 +439,6 @@ class ClipGenView(QMainWindow):
             name_input.textChanged.connect(lambda text, h=hotkey: self.update_name(h, text))
             hotkey_layout.addWidget(name_input)
             self.name_inputs[hotkey["combination"]] = name_input
-
-            # API Provider and Model selection
-            api_model_layout = QHBoxLayout()
-
-            api_provider_combo = QComboBox()
-            api_provider_combo.addItems(["Gemini", "Mistral", "Groq"])
-            api_provider_combo.setCurrentText(hotkey.get("api_provider", "Gemini"))
-            if hotkey["name"] == "Текст с картинки":
-                api_provider_combo.setEnabled(False)
-            api_provider_combo.setStyleSheet("""
-                QComboBox {
-                    background-color: white;
-                    color: red;
-                    border: 1px solid #444444;
-                    border-radius: 8px;
-                    padding: 8px;
-                }
-                QComboBox::drop-down {
-                    border: none;
-                }
-                QComboBox QAbstractItemView {
-                    background-color: white;
-                    color: red;
-                    selection-background-color: #f0f0f0;
-                    selection-color: red;
-                }
-            """)
-            api_provider_combo.currentTextChanged.connect(lambda text, h=hotkey: self.update_api_provider(h, text))
-            api_model_layout.addWidget(api_provider_combo)
-
-            model_combo = QComboBox()
-            model_combo.setStyleSheet("""
-                QComboBox {
-                    background-color: white;
-                    color: red;
-                    border: 1px solid #444444;
-                    border-radius: 8px;
-                    padding: 8px;
-                }
-                QComboBox::drop-down {
-                    border: none;
-                }
-                QComboBox QAbstractItemView {
-                    background-color: white;
-                    color: red;
-                    selection-background-color: #f0f0f0;
-                    selection-color: red;
-                }
-            """)
-            model_combo.addItem(hotkey.get("model", ""))
-            model_combo.setCurrentText(hotkey.get("model", ""))
-            model_combo.currentTextChanged.connect(lambda text, h=hotkey: self.update_model(h, text))
-            api_model_layout.addWidget(model_combo)
-            self.model_combos[hotkey["combination"]] = model_combo
-
-            update_models_button = QPushButton("🔄")
-            update_models_button.setFixedSize(35, 35)
-            update_models_button.setStyleSheet("""
-                QPushButton {
-                    font-size: 18px;
-                    padding: 0px;
-                    border-radius: 17px;
-                }
-            """)
-            update_models_button.clicked.connect(lambda _, h=hotkey: self.update_models_for_hotkey(h))
-            api_model_layout.addWidget(update_models_button)
-
-            hotkey_layout.addLayout(api_model_layout)
             
             # Поле для промпта
             prompt_label = QLabel("Промпт:")
@@ -713,9 +567,6 @@ class ClipGenView(QMainWindow):
         
         # Восстанавливаем активную вкладку
         self.tabs.setCurrentIndex(current_tab_index)
-
-    def update_models_for_hotkey(self, hotkey):
-        self.update_models_signal.emit(hotkey)
 
     def update_hotkey_from_sequence(self, hotkey, sequence):
         """Обновляет комбинацию клавиш по новой записи последовательности"""
@@ -1072,8 +923,6 @@ class ClipGenView(QMainWindow):
             self.color_pickers[new_combo] = self.color_pickers.pop(old_combo)
         if old_combo in self.hotkey_combos:
             self.hotkey_combos[new_combo] = self.hotkey_combos.pop(old_combo)
-        if old_combo in self.model_combos:
-            self.model_combos[new_combo] = self.model_combos.pop(old_combo)
         if old_combo in self.buttons:
             self.buttons[new_combo] = self.buttons.pop(old_combo)
 

@@ -10,13 +10,11 @@ import pyperclip
 from PIL import ImageGrab
 import google.generativeai as genai
 from google.generativeai import GenerationConfig
-from mistralai import Mistral
-from groq import Groq
 import win32api
 import win32con
 from pynput import keyboard as pkb
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal, QPoint
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtWidgets import QApplication
 import ctypes
 from ctypes import windll, c_bool, c_int, byref, POINTER, Structure
 from libs.ClipGen_view import ClipGenView
@@ -33,24 +31,16 @@ logger.addHandler(console_handler)
 
 # Начальная конфигурация
 DEFAULT_CONFIG = {
-    "gemini_api_key": "YOUR_API_KEY_HERE",
-    "mistral_api_key": "YOUR_API_KEY_HERE",
-    "groq_api_key": "YOUR_API_KEY_HERE",
-    "available_models": {
-        "Gemini": ["gemini-1.5-flash", "gemini-pro", "gemini-pro-vision"],
-        "Mistral": ["mistral-large-latest", "mistral-small-latest"],
-        "Groq": []
-    },
+    "api_key": "YOUR_API_KEY_HERE",
     "hotkeys": [
-        {"combination": "Ctrl+F1", "name": "Коррекция", "log_color": "#FFFFFF", "prompt": "Пожалуйста, исправь следующий текст...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
-        {"combination": "Ctrl+F2", "name": "Переписать", "log_color": "#A3BFFA", "prompt": "Пожалуйста, исправь следующий текст, если нужно...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
-        {"combination": "Ctrl+F3", "name": "Перевод", "log_color": "#FBB6CE", "prompt": "Пожалуйста, переведи следующий текст на русский язык...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
-        {"combination": "Ctrl+F6", "name": "Объяснение", "log_color": "#FAF089", "prompt": "Пожалуйста, объясни следующий текст простыми словами...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
-        {"combination": "Ctrl+F7", "name": "Ответ на вопрос", "log_color": "#FBD38D", "prompt": "Пожалуйста, ответь на следующий вопрос...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
-        {"combination": "Ctrl+F8", "name": "Просьба", "log_color": "#B5EAD7", "prompt": "Выполни просьбу пользователя...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
-        {"combination": "Ctrl+F9", "name": "Комментарий", "log_color": "#D6BCFA", "prompt": "Генерируй саркастичные комментарии...", "api_provider": "Gemini", "model": "gemini-1.5-flash", "type": "text"},
-        {"combination": "Ctrl+F10", "name": "Анализ изображения", "log_color": "#A1CFF9", "prompt": "Анализируй изображение...", "api_provider": "Gemini", "model": "gemini-pro-vision", "type": "image"},
-        {"combination": "Ctrl+F11", "name": "Текст с картинки", "log_color": "#DAF7A6", "prompt": "Extrahiere den gesamten Text aus diesem Bild. Gib ausschließlich den transkribierten Text zurück, ohne zusätzliche Kommentare oder Formatierungen.", "api_provider": "Gemini", "model": "gemini-pro-vision", "type": "image"}
+        {"combination": "Ctrl+F1", "name": "Коррекция", "log_color": "#FFFFFF", "prompt": "Пожалуйста, исправь следующий текст..."},
+        {"combination": "Ctrl+F2", "name": "Переписать", "log_color": "#A3BFFA", "prompt": "Пожалуйста, исправь следующий текст, если нужно..."},
+        {"combination": "Ctrl+F3", "name": "Перевод", "log_color": "#FBB6CE", "prompt": "Пожалуйста, переведи следующий текст на русский язык..."},
+        {"combination": "Ctrl+F6", "name": "Объяснение", "log_color": "#FAF089", "prompt": "Пожалуйста, объясни следующий текст простыми словами..."},
+        {"combination": "Ctrl+F7", "name": "Ответ на вопрос", "log_color": "#FBD38D", "prompt": "Пожалуйста, ответь на следующий вопрос..."},
+        {"combination": "Ctrl+F8", "name": "Просьба", "log_color": "#B5EAD7", "prompt": "Выполни просьбу пользователя..."},
+        {"combination": "Ctrl+F9", "name": "Комментарий", "log_color": "#D6BCFA", "prompt": "Генерируй саркастичные комментарии..."},
+        {"combination": "Ctrl+F10", "name": "Анализ изображения", "log_color": "#A1CFF9", "prompt": "Анализируй изображение..."}
     ]
 }
 
@@ -63,9 +53,7 @@ class ClipGen(ClipGenView):
         super().__init__()
         
         # Инициализация Gemini
-        genai.configure(api_key=self.config["gemini_api_key"])
-        self.mistral_client = Mistral(api_key=self.config["mistral_api_key"])
-        self.groq_client = Groq(api_key=self.config.get("groq_api_key"))
+        genai.configure(api_key=self.config["api_key"])
         self.queue = Queue()
         self.stop_event = threading.Event()
         
@@ -87,14 +75,6 @@ class ClipGen(ClipGenView):
         # Тестовое сообщение
         self.log_signal.emit("ClipGen запущен", "#FFFFFF")
         self.quit_signal.connect(self.real_closeEvent)
-        self.save_gemini_api_key_button.clicked.connect(self.update_gemini_api_key)
-        self.save_mistral_api_key_button.clicked.connect(self.update_mistral_api_key)
-        self.save_groq_api_key_button.clicked.connect(self.update_groq_api_key)
-        self.update_models_signal.connect(self.update_models_for_hotkey)
-
-        # Füllen der Modell-Dropdowns beim Start
-        for hotkey in self.config["hotkeys"]:
-            self.update_model_combobox_for_hotkey(hotkey)
         
     # В файле ClipGen.py замените метод create_log_handler следующим кодом:
 
@@ -189,49 +169,6 @@ class ClipGen(ClipGenView):
         try:
             with open("settings.json", "r", encoding="utf-8") as f:
                 self.config = json.load(f)
-            if "gemini_api_key" not in self.config:
-                self.config["gemini_api_key"] = self.config.get("api_key", "YOUR_API_KEY_HERE")
-            if "mistral_api_key" not in self.config:
-                self.config["mistral_api_key"] = "YOUR_API_KEY_HERE"
-            if "groq_api_key" not in self.config:
-                self.config["groq_api_key"] = "YOUR_API_KEY_HERE"
-            if "api_key" in self.config:
-                del self.config["api_key"]
-            if "available_models" not in self.config:
-                self.config["available_models"] = {
-                    "Gemini": ["gemini-1.5-flash", "gemini-pro"],
-                    "Mistral": ["mistral-large-latest", "mistral-small-latest"],
-                    "Groq": []
-                }
-            elif "Groq" not in self.config["available_models"]:
-                self.config["available_models"]["Groq"] = []
-
-            for hotkey in self.config["hotkeys"]:
-                if "api_provider" not in hotkey:
-                    hotkey["api_provider"] = "Gemini"
-                if "model" not in hotkey:
-                    hotkey["model"] = "gemini-1.5-flash"
-
-            # Migration, um den 'type' für Hotkeys hinzuzufügen
-            default_hotkey_types = {h["combination"]: h["type"] for h in DEFAULT_CONFIG["hotkeys"]}
-            for hotkey in self.config["hotkeys"]:
-                if "type" not in hotkey:
-                    # Weisen Sie den Typ basierend auf der Standardkombination zu oder standardmäßig auf 'text'
-                    hotkey["type"] = default_hotkey_types.get(hotkey["combination"], "text")
-
-            # Migration für neue Hotkeys
-            existing_hotkey_names = {h["name"] for h in self.config["hotkeys"]}
-            for default_hotkey in DEFAULT_CONFIG["hotkeys"]:
-                if default_hotkey["name"] not in existing_hotkey_names:
-                    self.config["hotkeys"].append(default_hotkey)
-
-            # Migration für das Modell der Bilderkennungs-Hotkeys
-            for hotkey in self.config["hotkeys"]:
-                if hotkey["name"] in ["Анализ изображения", "Текст с картинки"]:
-                    if hotkey["model"] == "gemini-1.5-flash":
-                        hotkey["model"] = "gemini-pro-vision"
-
-            self.save_settings()
         except FileNotFoundError:
             self.config = DEFAULT_CONFIG.copy()
             self.save_settings()
@@ -247,29 +184,10 @@ class ClipGen(ClipGenView):
             if hasattr(handler, 'action_colors'):
                 handler.action_colors = {k["name"]: k["log_color"] for k in self.config["hotkeys"]}
 
-    def update_gemini_api_key(self):
-        new_api_key = self.gemini_api_key_input.text()
-        self.config["gemini_api_key"] = new_api_key
-        genai.configure(api_key=new_api_key)
+    def update_api_key(self, text):
+        self.config["api_key"] = text
+        genai.configure(api_key=text)
         self.save_settings()
-        self.log_signal.emit("Gemini API-Schlüssel gespeichert.", "#FFFFFF")
-        QMessageBox.information(self, "Erfolg", "Der Gemini API-Schlüssel wurde erfolgreich gespeichert.")
-
-    def update_mistral_api_key(self):
-        new_api_key = self.mistral_api_key_input.text()
-        self.config["mistral_api_key"] = new_api_key
-        self.mistral_client = Mistral(api_key=new_api_key)
-        self.save_settings()
-        self.log_signal.emit("Mistral API-Schlüssel gespeichert.", "#FFFFFF")
-        QMessageBox.information(self, "Erfolg", "Der Mistral API-Schlüssel wurde erfolgreich gespeichert.")
-
-    def update_groq_api_key(self):
-        new_api_key = self.groq_api_key_input.text()
-        self.config["groq_api_key"] = new_api_key
-        self.groq_client = Groq(api_key=new_api_key)
-        self.save_settings()
-        self.log_signal.emit("Groq API-Schlüssel gespeichert.", "#FFFFFF")
-        QMessageBox.information(self, "Erfolg", "Der Groq API-Schlüssel wurde erfolgreich gespeichert.")
 
     def update_prompt(self, hotkey, text):
         for h in self.config["hotkeys"]:
@@ -277,75 +195,6 @@ class ClipGen(ClipGenView):
                 h["prompt"] = text
                 break
         self.save_settings()
-
-    def update_api_provider(self, hotkey, provider):
-        for h in self.config["hotkeys"]:
-            if h["combination"] == hotkey["combination"]:
-                h["api_provider"] = provider
-                self.update_model_combobox_for_hotkey(h)
-                break
-        self.save_settings()
-
-    def update_model(self, hotkey, model):
-        for h in self.config["hotkeys"]:
-            if h["combination"] == hotkey["combination"]:
-                h["model"] = model
-                break
-        self.save_settings()
-
-    def update_model_combobox_for_hotkey(self, hotkey):
-        provider = hotkey.get("api_provider", "Gemini")
-        models = self.config.get("available_models", {}).get(provider, [])
-
-        # Finde das QComboBox-Widget für das spezifische Hotkey
-        if hotkey["combination"] in self.model_combos:
-            combo_box = self.model_combos[hotkey["combination"]]
-
-            # Blockiere Signale, um Endlosschleifen zu vermeiden
-            combo_box.blockSignals(True)
-
-            current_model = combo_box.currentText()
-            combo_box.clear()
-            combo_box.addItems(models)
-
-            # Versuche, das zuvor ausgewählte Modell wiederherzustellen
-            if current_model in models:
-                combo_box.setCurrentText(current_model)
-            elif models:
-                # Wähle das erste Modell in der Liste als Standard
-                combo_box.setCurrentIndex(0)
-
-            # Entblockiere Signale
-            combo_box.blockSignals(False)
-
-    def update_models_for_hotkey(self, hotkey):
-        provider = hotkey.get("api_provider", "Gemini")
-        new_models = []
-        try:
-            if provider == "Gemini":
-                # Korrekter Aufruf für Gemini API
-                all_models = genai.list_models()
-                new_models = sorted([m.name for m in all_models if 'generateContent' in m.supported_generation_methods])
-
-            elif provider == "Mistral":
-                res = self.mistral_client.models.list()
-                new_models = sorted([model.id for model in res.data])
-
-            elif provider == "Groq":
-                res = self.groq_client.models.list()
-                new_models = sorted([model.id for model in res.data])
-
-            if new_models:
-                self.config["available_models"][provider] = new_models
-                self.save_settings()
-                self.update_model_combobox_for_hotkey(hotkey)
-                QMessageBox.information(self, "Erfolg", f"Modellliste für {provider} erfolgreich aktualisiert.")
-            else:
-                QMessageBox.warning(self, "Fehler", f"Keine Modelle für {provider} gefunden.")
-
-        except Exception as e:
-            logger.error(f"Fehler beim Abrufen der Modelle für {provider}: {e}")
-            QMessageBox.critical(self, "API Fehler", f"Konnte Modelle für {provider} nicht abrufen. Bitte überprüfen Sie Ihren API-Schlüssel und Ihre Internetverbindung.")
 
     def update_name(self, hotkey, text):
         for h in self.config["hotkeys"]:
@@ -461,21 +310,23 @@ class ClipGen(ClipGenView):
             self.stop_event.wait()
             listener.stop()
 
-    def process_text_with_gemini(self, text, model, prompt, action, is_image=False):
-        hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
-        combo = hotkey["combination"] if hotkey else ""
+    def process_text_with_gemini(self, text, action, prompt, is_image=False):
         try:
+            # Находим hotkey для данного действия
+            hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
+            combo = hotkey["combination"] if hotkey else ""
+
             if is_image:
                 image = ImageGrab.grabclipboard()
                 if not image:
-                    logger.warning(f"[{combo}: {action}] Clipboard is empty")
+                    logger.warning(f"[{combo}: {action}] Буфер обмена пуст")
                     return ""
-                response = genai.GenerativeModel(model).generate_content(
+                response = genai.GenerativeModel("models/gemini-2.0-flash-exp").generate_content(
                     contents=[prompt, image], generation_config=GenerationConfig(temperature=0.7, max_output_tokens=2048)
                 )
             else:
                 full_prompt = prompt + text
-                response = genai.GenerativeModel(model).generate_content(
+                response = genai.GenerativeModel("models/gemini-2.0-flash-exp").generate_content(
                     full_prompt, generation_config=GenerationConfig(temperature=0.7, max_output_tokens=2048)
                 )
             
@@ -483,123 +334,44 @@ class ClipGen(ClipGenView):
             logger.info(f"[{combo}: {action}] Processed: {result}")
             return result
         except Exception as e:
-            logger.error(f"[{combo}: {action}] Error requesting Gemini: {e}")
+            logger.error(f"[{combo}: {action}] Ошибка при запросе к Gemini: {e}")
             return ""
 
-    def process_text_with_mistral(self, text, model, prompt, action):
+    def handle_text_operation(self, action, prompt):
+        # Находим hotkey для данного действия
         hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
         combo = hotkey["combination"] if hotkey else ""
-        try:
-            messages = [
-                {"role": "user", "content": prompt + text}
-            ]
-            chat_response = self.mistral_client.chat.complete(
-                model=model,
-                messages=messages,
-            )
-            result = chat_response.choices[0].message.content.strip()
-            logger.info(f"[{combo}: {action}] Processed: {result}")
-            return result
-        except Exception as e:
-            logger.error(f"[{combo}: {action}] Error requesting Mistral: {e}")
-            return ""
-
-    def process_with_groq(self, text, model, prompt, action, is_image=False):
-        hotkey = next((h for h in self.config["hotkeys"] if h["name"] == action), None)
-        combo = hotkey["combination"] if hotkey else ""
-        try:
-            if is_image:
-                image = ImageGrab.grabclipboard()
-                if not image:
-                    logger.warning(f"[{combo}: {action}] Clipboard is empty")
-                    return ""
-
-                # Konvertieren Sie das Bild in ein Format, das Groq akzeptiert (Base64)
-                from io import BytesIO
-                import base64
-                buffered = BytesIO()
-                image.save(buffered, format="PNG")
-                base64_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
-
-                messages = [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/png;base64,{base64_image}",
-                                },
-                            },
-                        ],
-                    }
-                ]
-            else:
-                 messages=[
-                    {
-                        "role": "user",
-                        "content": prompt + text,
-                    }
-                ]
-
-            chat_completion = self.groq_client.chat.completions.create(
-                messages=messages,
-                model=model,
-            )
-            result = chat_completion.choices[0].message.content.strip()
-            logger.info(f"[{combo}: {action}] Processed: {result}")
-            return result
-        except Exception as e:
-            logger.error(f"[{combo}: {action}] Error requesting Groq: {e}")
-            return ""
-
-    def handle_text_operation(self, hotkey):
-        action = hotkey["name"]
-        prompt = hotkey["prompt"]
-        api_provider = hotkey["api_provider"]
-        model = hotkey["model"]
-        hotkey_type = hotkey.get("type", "text")
-        combo = hotkey["combination"]
         
         try:
+            # Логируем активацию действия
             logger.info(f"[{combo}: {action}] Activated")
             
-            is_image_action = hotkey_type == "image"
-            processed_text = ""
+            # Копируем текст из буфера
+            win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
+            win32api.keybd_event(ord('C'), 0, 0, 0)
+            time.sleep(0.1)
+            win32api.keybd_event(ord('C'), 0, win32con.KEYEVENTF_KEYUP, 0)
+            win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
+            time.sleep(0.1)
 
-            if is_image_action:
-                if api_provider == "Mistral":
-                    logger.warning(f"[{combo}: {action}] Image analysis is not supported by Mistral.")
-                    return
-                # Для операций с изображениями не симулируем Ctrl+C, предполагаем, что изображение уже в буфере обмена.
-                if api_provider == "Gemini":
-                    processed_text = self.process_text_with_gemini("", model, prompt, action, is_image=True)
-                elif api_provider == "Groq":
-                    processed_text = self.process_with_groq("", model, prompt, action, is_image=True)
+            is_image = action == "Анализ изображения"
+            if is_image:
+                processed_text = self.process_text_with_gemini("", action, prompt, is_image=True)
             else:
-                # Для текстовых операций сначала симулируем Ctrl+C, чтобы скопировать выделенный текст.
-                win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
-                win32api.keybd_event(ord('C'), 0, 0, 0)
-                time.sleep(0.1)
-                win32api.keybd_event(ord('C'), 0, win32con.KEYEVENTF_KEYUP, 0)
-                win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
-                time.sleep(0.1)
-
                 text = pyperclip.paste()
                 if not text.strip():
-                    time.sleep(0.5) # Даем время буферу обновиться
+                    # Пробуем снова скопировать
+                    win32api.keybd_event(win32con.VK_CONTROL, 0, 0, 0)
+                    win32api.keybd_event(ord('C'), 0, 0, 0)
+                    time.sleep(0.5)
+                    win32api.keybd_event(ord('C'), 0, win32con.KEYEVENTF_KEYUP, 0)
+                    win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
+                    time.sleep(0.5)
                     text = pyperclip.paste()
                     if not text.strip():
-                        logger.warning(f"[{combo}: {action}] Clipboard is empty after two retries.")
+                        logger.warning(f"[{combo}: {action}] Буфер обмена пуст после двух попыток копирования")
                         return
-
-                if api_provider == "Gemini":
-                    processed_text = self.process_text_with_gemini(text, model, prompt, action)
-                elif api_provider == "Mistral":
-                    processed_text = self.process_text_with_mistral(text, model, prompt, action)
-                elif api_provider == "Groq":
-                    processed_text = self.process_with_groq(text, model, prompt, action)
+                processed_text = self.process_text_with_gemini(text, action, prompt)
 
             if processed_text:
                 pyperclip.copy(processed_text)
@@ -611,7 +383,7 @@ class ClipGen(ClipGenView):
                 win32api.keybd_event(ord('V'), 0, win32con.KEYEVENTF_KEYUP, 0)
                 win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
         except Exception as e:
-            logger.error(f"[{combo}: {action}] Error: {e}")
+            logger.error(f"[{combo}: {action}] Ошибка: {e}")
 
     def check_queue(self):
         def queue_worker():
@@ -621,7 +393,7 @@ class ClipGen(ClipGenView):
                     logger.info(f"Received event from queue: {event}")
                     for hotkey in self.config["hotkeys"]:
                         if hotkey["name"] == event:
-                            threading.Thread(target=self.handle_text_operation, args=(hotkey,), daemon=True).start()
+                            threading.Thread(target=self.handle_text_operation, args=(hotkey["name"], hotkey["prompt"]), daemon=True).start()
                             break
                 except Empty:
                     continue

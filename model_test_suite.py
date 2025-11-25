@@ -51,37 +51,20 @@ def write_to_csv(writer, provider, model, prompt, response):
 
 # --- Intelligente Filterfunktionen ---
 
-def get_gemini_vision_models(client):
-    """Ruft alle Modelle ab und filtert nach Vision-fähigen Modellen."""
+def get_gemini_models(client):
+    """Ruft alle Modelle ab, die generateContent unterstützen."""
     all_models = client.list_models()
-    vision_models = []
-    keywords = ['vision', 'pro', 'flash']
-    for model in all_models:
-        if 'generateContent' in model.supported_generation_methods:
-            if any(keyword in model.name for keyword in keywords):
-                vision_models.append(model.name)
-    return vision_models
+    return [model.name for model in all_models if 'generateContent' in model.supported_generation_methods]
 
-def get_mistral_vision_models(client):
-    """Ruft alle Modelle ab und filtert nach Vision-fähigen Modellen."""
+def get_mistral_models(client):
+    """Ruft alle verfügbaren Mistral-Modelle ab."""
     response = client.models.list()
-    vision_models = []
-    # Mistral hat Vision in die 'large' Modelle integriert
-    keywords = ['large']
-    for model in response.data:
-        if any(keyword in model.id for keyword in keywords):
-            vision_models.append(model.id)
-    return vision_models
+    return [model.id for model in response.data]
 
-def get_groq_vision_models(client):
-    """Ruft alle Modelle ab und filtert nach Vision-fähigen Modellen."""
+def get_groq_models(client):
+    """Ruft alle verfügbaren Groq-Modelle ab."""
     response = client.models.list()
-    vision_models = []
-    keywords = ['llama-3.1', 'llama3.1', 'maverick', 'scout']
-    for model in response.data:
-        if any(keyword in model.id for keyword in keywords):
-            vision_models.append(model.id)
-    return vision_models
+    return [model.id for model in response.data]
 
 
 # --- Hauptlogik ---
@@ -104,7 +87,7 @@ def main():
     if gemini_api_key and "YOUR_API_KEY_HERE" not in gemini_api_key:
         try:
             genai.configure(api_key=gemini_api_key)
-            all_models_to_test["Gemini"] = get_gemini_vision_models(genai)
+            all_models_to_test["Gemini"] = get_gemini_models(genai)
         except Exception as e:
             print(f"FEHLER beim Abrufen der Gemini-Modelle: {e}")
 
@@ -113,7 +96,7 @@ def main():
     if mistral_api_key and "YOUR_API_KEY_HERE" not in mistral_api_key:
         try:
             mistral_client = MistralClient(api_key=mistral_api_key)
-            all_models_to_test["Mistral"] = get_mistral_vision_models(mistral_client)
+            all_models_to_test["Mistral"] = get_mistral_models(mistral_client)
         except Exception as e:
             print(f"FEHLER beim Abrufen der Mistral-Modelle: {e}")
 
@@ -122,7 +105,7 @@ def main():
     if groq_api_key and "YOUR_API_KEY_HERE" not in groq_api_key:
         try:
             groq_client = Groq(api_key=groq_api_key)
-            all_models_to_test["Groq"] = get_groq_vision_models(groq_client)
+            all_models_to_test["Groq"] = get_groq_models(groq_client)
         except Exception as e:
             print(f"FEHLER beim Abrufen der Groq-Modelle: {e}")
 
@@ -169,7 +152,7 @@ def main():
                     print(f"Teste Modell: {model_name}...")
                     try:
                         messages = [{"role": "user", "content": [{"type": "text", "text": PROMPT}, {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}}]}]
-                        response = mistral_client.chat(model=model_name, messages=messages)
+                        response = mistral_client.chat.completions.create(model=model_name, messages=messages)
                         result = response.choices[0].message.content.strip()
                     except Exception as e:
                         result = f"FEHLER: {e}"
