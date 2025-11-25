@@ -5,7 +5,7 @@ import base64
 import time
 from datetime import datetime
 import google.generativeai as genai
-from mistralai import Mistral
+from mistralai.client import MistralClient
 from groq import Groq
 from PIL import Image
 
@@ -14,7 +14,26 @@ SETTINGS_FILE = "settings.json"
 IMAGE_PATH = "test_images/image.png"
 PROMPT = "Extrahiere den gesamten Text aus diesem Bild. Gib ausschließlich den transkribierten Text zurück, ohne zusätzliche Kommentare oder Formatierungen."
 CSV_OUTPUT_FILE = "model_test_results.csv"
-REQUEST_PAUSE_SECONDS = 5
+REQUEST_PAUSE_SECONDS = 20  # Erhöht auf 20s, um Ratenbegrenzungen sicher zu umgehen
+
+# --- Feste Listen der zu testenden Vision-Modelle (basierend auf Recherche) ---
+# Hinweis: Die Gemini-API listet viele Modelle auf, wir testen nur die stabilsten Vision-Modelle.
+GEMINI_VISION_MODELS = [
+    "gemini-1.5-pro-latest",
+    "gemini-1.5-flash-latest",
+]
+
+# Mistral bietet spezifische Modelle für Bilderkennung an.
+MISTRAL_VISION_MODELS = [
+    "mistral-large-latest", # Pixtral Large ist jetzt Teil von Large
+]
+
+# Groq hat nur wenige Modelle, die Vision unterstützen.
+GROQ_VISION_MODELS = [
+    "llama3-groq-70b-8192-tool-use-preview",
+    "llama3-8b-8192-tool-use-preview"
+]
+
 
 # --- Hilfsfunktionen ---
 
@@ -71,17 +90,9 @@ def main():
         else:
             try:
                 genai.configure(api_key=gemini_api_key)
-                # Filtere Modelle, um nur wahrscheinliche Vision-Modelle zu testen
-                gemini_vision_keywords = ["vision", "flash", "pro", "image", "maverick", "scout", "gemma-3"]
-                all_gemini_models = [m for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                gemini_models = [
-                    m for m in all_gemini_models
-                    if any(k in m.name for k in gemini_vision_keywords) and "tts" not in m.name and "embed" not in m.name
-                ]
                 image = Image.open(IMAGE_PATH)
 
-                for model_info in gemini_models:
-                    model_name = model_info.name
+                for model_name in GEMINI_VISION_MODELS:
                     print(f"Teste Modell: {model_name}...")
                     try:
                         model = genai.GenerativeModel(model_name)
@@ -90,6 +101,7 @@ def main():
                     except Exception as e:
                         result = f"FEHLER: {e}"
                     write_to_csv(csv_writer, "Gemini", model_name, PROMPT, result)
+                    print(f"Warte {REQUEST_PAUSE_SECONDS} Sekunden...")
                     time.sleep(REQUEST_PAUSE_SECONDS)
             except Exception as e:
                 print(f"FEHLER bei der Initialisierung von Gemini: {e}")
@@ -101,22 +113,13 @@ def main():
             print("WARNUNG: Mistral API-Schlüssel nicht konfiguriert. Überspringe Tests.")
         else:
             try:
-                mistral_client = Mistral(api_key=mistral_api_key)
+                mistral_client = MistralClient(api_key=mistral_api_key)
                 base64_image = encode_image_to_base64(IMAGE_PATH)
-                mistral_models = mistral_client.models.list()
 
-                # Filtere nur für Modelle, die wahrscheinlich Bilder unterstützen ("pixtral")
-                vision_keywords = ["pixtral"]
-                for model_info in mistral_models.data:
-                    model_name = model_info.id
-
-                    if not any(keyword in model_name for keyword in vision_keywords):
-                        print(f"Überspringe mutmaßliches Nicht-Vision-Modell: {model_name}")
-                        continue
-
-                    print(f"Teste Vision-Modell: {model_name}...")
+                for model_name in MISTRAL_VISION_MODELS:
+                    print(f"Teste Modell: {model_name}...")
                     try:
-                        # Korrekter Aufbau für Anfragen an die Mistral-API
+                        # Korrekter Aufbau für Anfragen an die Mistral-API (basierend auf Recherche)
                         messages = [{
                             "role": "user",
                             "content": [
@@ -124,11 +127,12 @@ def main():
                                 {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}}
                             ]
                         }]
-                        response = mistral_client.chat.completions.create(model=model_name, messages=messages)
+                        response = mistral_client.chat(model=model_name, messages=messages)
                         result = response.choices[0].message.content.strip()
                     except Exception as e:
                         result = f"FEHLER: {e}"
                     write_to_csv(csv_writer, "Mistral", model_name, PROMPT, result)
+                    print(f"Warte {REQUEST_PAUSE_SECONDS} Sekunden...")
                     time.sleep(REQUEST_PAUSE_SECONDS)
             except Exception as e:
                 print(f"FEHLER bei der Initialisierung von Mistral: {e}")
@@ -144,18 +148,8 @@ def main():
                 base64_image = encode_image_to_base64(IMAGE_PATH)
 
                 if base64_image:
-                    groq_models = groq_client.models.list()
-
-                    # Filtere nur für Modelle, die wahrscheinlich Bilder unterstützen, um Payload-Fehler zu vermeiden
-                    vision_keywords = ["maverick", "scout"]
-                    for model_info in groq_models.data:
-                        model_name = model_info.id
-
-                        if not any(keyword in model_name for keyword in vision_keywords):
-                            print(f"Überspringe mutmaßliches Nicht-Vision-Modell: {model_name}")
-                            continue
-
-                        print(f"Teste Vision-Modell: {model_name}...")
+                    for model_name in GROQ_VISION_MODELS:
+                        print(f"Teste Modell: {model_name}...")
                         try:
                             # Der Payload für Vision-Modelle ist eine Liste mit Text und Bild-URL
                             chat_completion = groq_client.chat.completions.create(
@@ -173,6 +167,7 @@ def main():
                             result = f"FEHLER: {e}"
 
                         write_to_csv(csv_writer, "Groq", model_name, PROMPT, result)
+                        print(f"Warte {REQUEST_PAUSE_SECONDS} Sekunden...")
                         time.sleep(REQUEST_PAUSE_SECONDS)
             except Exception as e:
                 print(f"FEHLER bei der Initialisierung von Groq: {e}")
