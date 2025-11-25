@@ -14,7 +14,7 @@ SETTINGS_FILE = "settings.json"
 IMAGE_PATH = "test_images/image.png"
 PROMPT = "Extrahiere den gesamten Text aus diesem Bild. Gib ausschließlich den transkribierten Text zurück, ohne zusätzliche Kommentare oder Formatierungen."
 CSV_OUTPUT_FILE = "model_test_results.csv"
-REQUEST_PAUSE_SECONDS = 2
+REQUEST_PAUSE_SECONDS = 3  # Pause zwischen den Anfragen, um Ratenbegrenzungen zu vermeiden
 
 # --- Hilfsfunktionen ---
 
