@@ -55,7 +55,6 @@ class ClipGen(ClipGenView):
     def __init__(self):
         self.load_settings()
         super().__init__()  # Zuerst Elternklasse initialisieren
-        self.apply_styles()  # Dann apply_styles() aufrufen
         
         # Initialize API clients
         self.init_api_clients()
@@ -83,7 +82,6 @@ class ClipGen(ClipGenView):
 
     def apply_styles(self):
             """Ruft die apply_styles-Methode der Elternklasse auf"""
-            super().apply_styles()
             
     def init_api_clients(self):
         """Initialize API clients for all providers"""

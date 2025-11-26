@@ -538,6 +538,20 @@ def setup_settings_tab(self):
         # Обновляем key_states и интерфейс
         self.update_hotkey(old_combo, sequence)
 
+    def move_hotkey_up(self, index):
+        """Bewegt einen Hotkey in der Liste nach oben."""
+        if index > 0:
+            self.config["hotkeys"].insert(index - 1, self.config["hotkeys"].pop(index))
+            self.save_settings()
+            self.reload_settings_tab()
+
+    def move_hotkey_down(self, index):
+        """Bewegt einen Hotkey in der Liste nach unten."""
+        if index < len(self.config["hotkeys"]) - 1:
+            self.config["hotkeys"].insert(index + 1, self.config["hotkeys"].pop(index))
+            self.save_settings()
+            self.reload_settings_tab()
+
     def delete_hotkey(self, index):
         """Löscht einen Hotkey aus der Konfiguration"""
         try:
@@ -1209,25 +1223,17 @@ def create_hotkey_widget(self, index, hotkey):
     header_layout = QHBoxLayout()
     header_layout.setSpacing(8)
 
-    # Move handle (drag icon)
-    move_handle = QLabel("☰")
-    move_handle.setStyleSheet("""
-        QLabel {
-            color: #AAAAAA;
-            font-size: 14px;
-            padding: 2px 5px;
-            border: 1px solid #444444;
-            border-radius: 3px;
-            background-color: #333333;
-        }
-    """)
-    move_handle.setCursor(Qt.OpenHandCursor)
-
-    # Make the container draggable
-    hotkey_container.setProperty("hotkey_index", index)
-    hotkey_container.mousePressEvent = lambda event, idx=index: self.start_drag(event, idx)
-    hotkey_container.mouseMoveEvent = self.drag_move
-    hotkey_container.mouseReleaseEvent = self.end_drag
+    # Move buttons
+    move_buttons_layout = QVBoxLayout()
+    up_button = QPushButton("▲")
+    up_button.clicked.connect(lambda: self.move_hotkey_up(index))
+    up_button.setEnabled(index > 0)
+    down_button = QPushButton("▼")
+    down_button.clicked.connect(lambda: self.move_hotkey_down(index))
+    down_button.setEnabled(index < len(self.config["hotkeys"]) - 1)
+    move_buttons_layout.addWidget(up_button)
+    move_buttons_layout.addWidget(down_button)
+    header_layout.addLayout(move_buttons_layout)
 
     name_label = QLabel(f"#{index+1}")
     name_label.setStyleSheet("color: #AAAAAA; font-size: 11px; font-weight: bold; min-width: 25px;")
@@ -1261,7 +1267,6 @@ def create_hotkey_widget(self, index, hotkey):
         }
     """)
 
-    header_layout.addWidget(move_handle)
     header_layout.addWidget(name_label)
     header_layout.addWidget(name_input, stretch=1)
     header_layout.addWidget(combo_input)
@@ -1275,83 +1280,3 @@ def create_hotkey_widget(self, index, hotkey):
 
     hotkey_container.setLayout(hotkey_layout)
     return hotkey_container
-
-def start_drag(self, event, index):
-    """Startet das Verschieben eines Hotkeys"""
-    if event.button() == Qt.LeftButton:
-        self.drag_start_pos = event.pos()
-        self.drag_index = index
-        self.drag_widget = self.hotkey_widgets[index]
-        self.drag_widget.setStyleSheet("""
-            QWidget {
-                background-color: #333333;
-                border: 1px dashed #555555;
-                border-radius: 5px;
-                opacity: 0.9;
-            }
-        """)
-        self.drag_widget.raise_()
-
-def drag_move(self, event):
-    """Bewegt das verschobene Widget"""
-    if not hasattr(self, 'drag_index'):
-        return
-
-    # Calculate new position
-    new_pos = self.drag_widget.mapToParent(event.pos())
-    self.drag_widget.move(new_pos - self.drag_start_pos)
-
-    # Check for position changes
-    for i, widget in enumerate(self.hotkey_widgets):
-        if i == self.drag_index:
-            continue
-
-        widget_pos = widget.mapToParent(widget.rect().center())
-        drag_pos = self.drag_widget.mapToParent(self.drag_widget.rect().center())
-
-        # If we're over another widget, swap positions
-        if (widget_pos.y() - 20 < drag_pos.y() < widget_pos.y() + 20 and
-            widget_pos.x() - 20 < drag_pos.x() < widget_pos.x() + 20):
-
-            # Remove and reinsert at new position
-            self.scroll_layout.removeWidget(self.drag_widget)
-            self.hotkey_widgets.pop(self.drag_index)
-
-            if i < self.drag_index:
-                self.scroll_layout.insertWidget(i, self.drag_widget)
-                self.hotkey_widgets.insert(i, self.drag_widget)
-                self.drag_index = i
-            else:
-                self.scroll_layout.insertWidget(i, self.drag_widget)
-                self.hotkey_widgets.insert(i, self.drag_widget)
-                self.drag_index = i
-
-            break
-
-def end_drag(self, event):
-    """Beendet das Verschieben eines Hotkeys"""
-    if hasattr(self, 'drag_widget'):
-        self.drag_widget.setStyleSheet("""
-            QWidget {
-                background-color: transparent;
-                border-bottom: 1px solid #333333;
-                padding-bottom: 8px;
-            }
-        """)
-        delattr(self, 'drag_widget')
-        delattr(self, 'drag_index')
-        delattr(self, 'drag_start_pos')
-
-        # Update the order in config
-        self.update_hotkey_order()
-
-def update_hotkey_order(self):
-    """Aktualisiert die Reihenfolge der Hotkeys in der Konfiguration"""
-    new_hotkeys = []
-    for widget in self.hotkey_widgets:
-        index = widget.property("hotkey_index")
-        new_hotkeys.append(self.config["hotkeys"][index])
-
-    self.config["hotkeys"] = new_hotkeys
-    self.save_settings()
-    self.reload_settings_tab()

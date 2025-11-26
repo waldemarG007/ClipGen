@@ -7,7 +7,7 @@
 
 ## 🚀 Overview
 
-ClipGen is a powerful desktop utility that transforms how you interact with text and images on your computer. Using the Google Gemini API, ClipGen performs instant AI-powered operations on your clipboard content with simple hotkeys.
+ClipGen is a powerful desktop utility that transforms how you interact with text and images on your computer. Using the Gemini, Mistral, and Groq APIs, ClipGen performs instant AI-powered operations on your clipboard content with simple hotkeys.
 
 **Speed is our priority** - ClipGen processes short texts in under 0.5 seconds and longer texts in just seconds, making it feel like a native part of your operating system rather than an external tool.
 
@@ -61,7 +61,7 @@ With 1,000 daily requests, you can process hundreds of texts and extract informa
 ### Prerequisites
 - Python 3.8 or higher
 - Windows OS (currently Windows-only)
-- Google Gemini API key (free to obtain)
+- API keys for Gemini, Mistral, or Groq (at least one is required)
 
 ### Setup
 
@@ -76,18 +76,19 @@ With 1,000 daily requests, you can process hundreds of texts and extract informa
    pip install -r requirements.txt
    ```
 
-3. **Get a FREE Google Gemini API key**
-   - Visit [Google AI Studio](https://aistudio.google.com/u/0/apikey) directly
-   - Create a new API key (no credit card required)
-   - Copy your API key
-   - You'll get 1,000 free requests per day with this key!
+3. **Get API Keys**
+   - **Gemini:** Obtain a free API key from [Google AI Studio](https://aistudio.google.com/u/0/apikey).
+   - **Mistral:** Get your API key from the [Mistral platform](https://console.mistral.ai/).
+   - **Groq:** Sign up and get your API key from [GroqCloud](https://console.groq.com/keys).
 
 4. **Configure ClipGen**
    - Open `settings.json` in a text editor.
-   - Replace the placeholder API key with your own:
+   - Add your API keys to the corresponding fields. You only need to provide a key for the service you intend to use.
      ```json
      {
-         "api_key": "YOUR_API_KEY_HERE",
+         "gemini_api_key": "YOUR_GEMINI_API_KEY_HERE",
+         "mistral_api_key": "YOUR_MISTRAL_API_KEY_HERE",
+         "groq_api_key": "YOUR_GROQ_API_KEY_HERE",
          "hotkeys": [
              ...
          ]
@@ -143,20 +144,30 @@ customtkinter
 
 ## ⚙️ Customization
 
-You can customize ClipGen extensively by editing the `settings.json` file:
+You can customize ClipGen extensively by editing the `settings.json` file. Each hotkey can be configured to use a specific API provider and model.
 
 ```json
 {
-    "api_key": "YOUR_API_KEY",
+    "gemini_api_key": "YOUR_GEMINI_API_KEY",
+    "mistral_api_key": "YOUR_MISTRAL_API_KEY",
+    "groq_api_key": "YOUR_GROQ_API_KEY",
     "hotkeys": [
         {
             "combination": "Ctrl+F1",
             "name": "Correction",
             "log_color": "#FFFFFF",
-            "description": ["Ctrl+F1: Correction", "normal", "Fixes grammar, punctuation, and spelling"],
-            "prompt": "Please correct the following text..."
+            "prompt": "Please correct the following text...",
+            "api_provider": "Gemini",
+            "model": "gemini-1.5-flash"
         },
-        ...
+        {
+            "combination": "Ctrl+F2",
+            "name": "Rewrite",
+            "log_color": "#A3BFFA",
+            "prompt": "Rewrite the following text to be more clear and concise.",
+            "api_provider": "Mistral",
+            "model": "mistral-large-latest"
+        }
     ]
 }
 ```
@@ -164,8 +175,9 @@ Each aspect can be customized:
 - `combination`: The keyboard shortcut
 - `name`: Display name in the UI
 - `log_color`: Color in the application log
-- `description`: Information shown in tooltips
-- `prompt`: The instruction sent to Gemini AI
+- `prompt`: The instruction sent to the AI
+- `api_provider`: The AI provider to use (`Gemini`, `Mistral`, or `Groq`)
+- `model`: The specific model to use from the selected provider
 
 ## 🚀 Why ClipGen?
 
@@ -186,18 +198,17 @@ With ClipGen, the process becomes:
 
 This seamless integration creates a new computing experience where AI assistance feels like a natural extension of your keyboard.
 
-## 🧠 About the AI Model
+## 🧠 About the AI Models
 
-ClipGen uses the powerful **models/gemini-2.0-flash-exp** model from Google, which offers:
+ClipGen supports models from three different providers, giving you the flexibility to choose the best one for your needs:
 
-- **Fast response times** - Perfect for real-time text processing
-- **High accuracy** - Excellent results for grammar, translation, and analysis tasks
-- **Multimodal capabilities** - Analyzes both text and images effortlessly
-- **1,000 free API calls daily** - More than enough for personal and professional use
+- **Gemini**: Offers a powerful free tier and excellent multimodal capabilities for analyzing both text and images.
+- **Mistral**: Known for its high-performance models that are great for a wide range of text-based tasks.
+- **Groq**: Provides high-speed inference, making it a great choice for near-instantaneous results.
 
 ## 🔒 Privacy
 
-ClipGen processes text locally and only sends content to Google Gemini API when a hotkey is pressed. No data is stored or logged beyond the current session.
+ClipGen processes text locally and only sends content to the selected API provider when a hotkey is pressed. No data is stored or logged beyond the current session.
 
 ## 📅 In the plans
 - Add macOS and Linux support.
