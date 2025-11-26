@@ -1,6 +1,9 @@
-PyQt5==5.15.9
-pyperclip==1.9.0
-google-generativeai==0.8.4
-pywin32==310
-pynput==1.8.0
-Pillow==11.1.0
+google-generativeai
+mistralai
+groq
+python-dotenv
+PyQt5
+pyperclip
+pillow
+pynput
+pywin32

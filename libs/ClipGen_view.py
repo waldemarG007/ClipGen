@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                           QTextBrowser, QTabWidget, QLineEdit, QTextEdit, QLabel, QScrollArea,
@@ -328,205 +329,570 @@ class ClipGenView(QMainWindow):
         self.tabs.addTab(self.log_tab, "Логи")
 
     def setup_settings_tab(self):
-        self.settings_tab = QWidget()
-        self.settings_tab.setStyleSheet("background-color: #1e1e1e;")
-        self.settings_layout = QVBoxLayout(self.settings_tab)
-        self.settings_layout.setSpacing(15)
-        self.settings_layout.setContentsMargins(20, 20, 20, 20)
-
-        # Групп API ключа
-        api_key_container = QFrame()
-        api_key_container.setStyleSheet("""
-            QFrame {
-                background-color: #252525;
-                border-radius: 15px;
-                padding: 10px;
+        """Einrichtung der Einstellungen-Registerkarte"""
+        settings_widget = QWidget()
+        settings_layout = QVBoxLayout()
+        settings_layout.setContentsMargins(15, 15, 15, 15)
+        settings_layout.setSpacing(10)
+        
+        # === API-KEYS SECTION ===
+        api_section = QLabel("🔑 API-Schlüssel")
+        api_section.setStyleSheet("font-weight: bold; font-size: 14px; color: #FFFFFF;")
+        settings_layout.addWidget(api_section)
+        
+        # Gemini API Key
+        gemini_label = QLabel("Gemini API-Schlüssel:")
+        gemini_label.setStyleSheet("color: #CCCCCC; font-size: 12px;")
+        gemini_layout = QHBoxLayout()
+        gemini_layout.setSpacing(5)
+        
+        self.gemini_input = QLineEdit(self.config.get("gemini_api_key", ""))
+        self.gemini_input.setEchoMode(QLineEdit.Password)
+        self.gemini_input.setStyleSheet("""
+            QLineEdit {
+                background-color: #2a2a2a;
+                color: #FFFFFF;
+                border-radius: 5px;
+                border: 1px solid #444444;
+                padding: 6px;
+                font-size: 11px;
             }
         """)
-        api_key_layout = QVBoxLayout(api_key_container)
-        api_key_layout.setContentsMargins(15, 15, 15, 15)
-
-        api_key_label = QLabel("API ключ Gemini:")
-        api_key_label.setStyleSheet("margin-top: 5px;")
-        api_key_layout.addWidget(api_key_label)
-
-        # API-Schlüssel sicher auslesen
-        api_key = self.config.get("api_key", "")
-        if api_key == "YOUR_API_KEY_HERE":
-            api_key = ""  # Zeige das Eingabefeld leer an, когда kein echter Schlüssel gesetzt ist
         
-        self.api_key_input = QLineEdit(api_key)
-        self.api_key_input.setStyleSheet("""
-            border-radius: 8px; 
-            border: 1px solid #444444;
-            padding: 8px;
-            background-color: #2a2a2a;
-        """)
-        self.api_key_input.textChanged.connect(self.update_api_key)
-        api_key_layout.addWidget(self.api_key_input)
-
-        self.settings_layout.addWidget(api_key_container)
-
-        # Заголовок для горячих клавиш
-        hotkeys_title = QLabel("Настройка горячих клавиш")
-        hotkeys_title.setStyleSheet("font-size: 16px;")
-        self.settings_layout.addWidget(hotkeys_title)
-
-        # Создание карточек для каждой горячей клавиши
-        self.prompt_inputs = {}
-        self.name_inputs = {}
-        self.color_pickers = {}
-        self.hotkey_combos = {}
-        for i, hotkey in enumerate(self.config["hotkeys"]):
-            hotkey_card = QFrame()
-            hotkey_card.setStyleSheet(f"""
-                QFrame {{
-                    background-color: #252525;
-                    border-radius: 15px;
-                    padding: 10px;
-                }}
-            """)
-            hotkey_layout = QVBoxLayout(hotkey_card)
-            
-            # Выбор комбинации клавиш
-            hotkey_header = QHBoxLayout()
-            
-            # Создаем поле для записи комбинации клавиш
-            hotkey_edit = QKeySequenceEdit()
-            hotkey_edit.setKeySequence(hotkey["combination"])  # Устанавливаем текущую комбинацию
-            hotkey_edit.setStyleSheet("""
-                QKeySequenceEdit {
-                    background-color: #333333;
-                    color: white;
-                    border-radius: 5px;
-                    padding: 5px;
-                    font-family: 'Consolas', 'Courier New', monospace;
-                }
-            """)
-            # Добавляем обработчик изменения комбинации
-            hotkey_edit.keySequenceChanged.connect(
-                lambda seq, h=hotkey: self.update_hotkey_from_sequence(h, seq.toString())
-            )
-            # Добавляем поле в макет
-            hotkey_header.addWidget(hotkey_edit)
-            
-            # Добавляем кнопку удаления справа
-            delete_button = QPushButton("✕")
-            delete_button.setFixedSize(25, 25)
-            delete_button.setStyleSheet("""
-                QPushButton {
-                    background-color: #FF5F57;
-                    color: white;
-                    border-radius: 12px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #FF3B30;
-                }
-            """)
-            delete_button.clicked.connect(lambda *, h=hotkey: self.delete_hotkey(h))
-            hotkey_header.addWidget(delete_button)
-            
-            hotkey_layout.addLayout(hotkey_header)
-            
-            # Поле для имени действия
-            name_label = QLabel("Название действия:")
-            name_label.setStyleSheet("margin-top: 10px;")
-            hotkey_layout.addWidget(name_label)
-            
-            name_input = QLineEdit(hotkey["name"])
-            name_input.setStyleSheet("""
-                border-radius: 8px; 
-                border: 1px solid #444444;
-                padding: 8px;
-                background-color: #2a2a2a;
-            """)
-            name_input.textChanged.connect(lambda text, h=hotkey: self.update_name(h, text))
-            hotkey_layout.addWidget(name_input)
-            self.name_inputs[hotkey["combination"]] = name_input
-            
-            # Поле для промпта
-            prompt_label = QLabel("Промпт:")
-            prompt_label.setStyleSheet("margin-top: 10px;")
-            hotkey_layout.addWidget(prompt_label)
-            
-            prompt_input = QTextEdit(hotkey["prompt"])
-            prompt_input.setMinimumHeight(100)
-            prompt_input.setStyleSheet("""
-                border-radius: 8px; 
-                border: 1px solid #444444;
-                padding: 8px;
-                background-color: #2a2a2a;
-            """)
-            prompt_input.textChanged.connect(lambda h=hotkey, pi=prompt_input: self.update_prompt(h, pi.toPlainText()))
-            hotkey_layout.addWidget(prompt_input)
-            self.prompt_inputs[hotkey["combination"]] = prompt_input
-            
-            # Выбор цвета
-            color_layout = QHBoxLayout()
-            
-            color_label = QLabel("Цвет в логах:")
-            color_label.setStyleSheet("margin-top: 10px;")
-            color_layout.addWidget(color_label)
-            
-            color_input = QLineEdit(hotkey["log_color"].replace("#", ""))
-            color_input.setFixedWidth(80)
-            color_input.setStyleSheet("""
-                border-radius: 8px; 
-                border: 1px solid #444444;
-                padding: 5px;
-                background-color: #2a2a2a;
-            """)
-            color_input.textChanged.connect(lambda text, h=hotkey: self.update_color(h, f"#{text}"))
-            
-            color_preview = QPushButton()
-            color_preview.setFixedSize(25, 25)
-            color_preview.setStyleSheet(f"background-color: {hotkey['log_color']}; border-radius: 5px; border: none;")
-            color_preview.clicked.connect(lambda checked, h=hotkey, inp=color_input: self.open_color_picker(h, inp))
-            
-            color_layout.addWidget(color_input)
-            color_layout.addWidget(color_preview)
-            color_layout.addStretch()
-            
-            self.color_pickers[hotkey["combination"]] = (color_input, color_preview)
-            
-            hotkey_layout.addLayout(color_layout)
-            
-            self.settings_layout.addWidget(hotkey_card)
-
-        # Кнопки для добавления/удаления горячих клавиш
-        hotkey_buttons_layout = QHBoxLayout()
-        add_hotkey_button = QPushButton("Добавить новое действие")
-        add_hotkey_button.setStyleSheet("""
+        self.gemini_toggle_btn = QPushButton("👁️")
+        self.gemini_toggle_btn.setMaximumWidth(35)
+        self.gemini_toggle_btn.setMaximumHeight(28)
+        self.gemini_toggle_btn.setStyleSheet("""
             QPushButton {
-                background-color: #3D8948;
-                color: white;
-                border-radius: 8px;
-                padding: 5px 10px;
+                background-color: #444444;
+                color: #FFFFFF;
+                border: 1px solid #555555;
+                border-radius: 5px;
+                padding: 4px;
+                font-size: 11px;
             }
             QPushButton:hover {
-                background-color: #2A6C34;
+                background-color: #555555;
             }
         """)
-        add_hotkey_button.clicked.connect(self.add_new_hotkey)
-        hotkey_buttons_layout.addWidget(add_hotkey_button)
-        hotkey_buttons_layout.addStretch()
-        self.settings_layout.addLayout(hotkey_buttons_layout)
-
-        self.settings_layout.addStretch()
-        self.settings_scroll = QScrollArea()
-        self.settings_scroll.setWidget(self.settings_tab)
-        self.settings_scroll.setWidgetResizable(True)
-        self.settings_scroll.setStyleSheet("""
+        self.gemini_toggle_btn.clicked.connect(lambda: self.toggle_api_visibility(self.gemini_input, self.gemini_toggle_btn))
+        
+        gemini_save_btn = QPushButton("💾")
+        gemini_save_btn.setMaximumWidth(35)
+        gemini_save_btn.setMaximumHeight(28)
+        gemini_save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2a8a2a;
+                color: #FFFFFF;
+                border: 1px solid #3a9a3a;
+                border-radius: 5px;
+                padding: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #3a9a3a;
+            }
+        """)
+        gemini_save_btn.clicked.connect(lambda: self.save_single_api_key("gemini_api_key", self.gemini_input, "Gemini"))
+        
+        gemini_layout.addWidget(self.gemini_input)
+        gemini_layout.addWidget(self.gemini_toggle_btn)
+        gemini_layout.addWidget(gemini_save_btn)
+        
+        settings_layout.addWidget(gemini_label)
+        settings_layout.addLayout(gemini_layout)
+        
+        # Mistral API Key
+        mistral_label = QLabel("Mistral API-Schlüssel:")
+        mistral_label.setStyleSheet("color: #CCCCCC; font-size: 12px; margin-top: 8px;")
+        mistral_layout = QHBoxLayout()
+        mistral_layout.setSpacing(5)
+        
+        self.mistral_input = QLineEdit(self.config.get("mistral_api_key", ""))
+        self.mistral_input.setEchoMode(QLineEdit.Password)
+        self.mistral_input.setStyleSheet("""
+            QLineEdit {
+                background-color: #2a2a2a;
+                color: #FFFFFF;
+                border-radius: 5px;
+                border: 1px solid #444444;
+                padding: 6px;
+                font-size: 11px;
+            }
+        """)
+        
+        self.mistral_toggle_btn = QPushButton("👁️")
+        self.mistral_toggle_btn.setMaximumWidth(35)
+        self.mistral_toggle_btn.setMaximumHeight(28)
+        self.mistral_toggle_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #444444;
+                color: #FFFFFF;
+                border: 1px solid #555555;
+                border-radius: 5px;
+                padding: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #555555;
+            }
+        """)
+        self.mistral_toggle_btn.clicked.connect(lambda: self.toggle_api_visibility(self.mistral_input, self.mistral_toggle_btn))
+        
+        mistral_save_btn = QPushButton("💾")
+        mistral_save_btn.setMaximumWidth(35)
+        mistral_save_btn.setMaximumHeight(28)
+        mistral_save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2a8a2a;
+                color: #FFFFFF;
+                border: 1px solid #3a9a3a;
+                border-radius: 5px;
+                padding: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #3a9a3a;
+            }
+        """)
+        mistral_save_btn.clicked.connect(lambda: self.save_single_api_key("mistral_api_key", self.mistral_input, "Mistral"))
+        
+        mistral_layout.addWidget(self.mistral_input)
+        mistral_layout.addWidget(self.mistral_toggle_btn)
+        mistral_layout.addWidget(mistral_save_btn)
+        
+        settings_layout.addWidget(mistral_label)
+        settings_layout.addLayout(mistral_layout)
+        
+        # Groq API Key
+        groq_label = QLabel("Groq API-Schlüssel:")
+        groq_label.setStyleSheet("color: #CCCCCC; font-size: 12px; margin-top: 8px;")
+        groq_layout = QHBoxLayout()
+        groq_layout.setSpacing(5)
+        
+        self.groq_input = QLineEdit(self.config.get("groq_api_key", ""))
+        self.groq_input.setEchoMode(QLineEdit.Password)
+        self.groq_input.setStyleSheet("""
+            QLineEdit {
+                background-color: #2a2a2a;
+                color: #FFFFFF;
+                border-radius: 5px;
+                border: 1px solid #444444;
+                padding: 6px;
+                font-size: 11px;
+            }
+        """)
+        
+        self.groq_toggle_btn = QPushButton("👁️")
+        self.groq_toggle_btn.setMaximumWidth(35)
+        self.groq_toggle_btn.setMaximumHeight(28)
+        self.groq_toggle_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #444444;
+                color: #FFFFFF;
+                border: 1px solid #555555;
+                border-radius: 5px;
+                padding: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #555555;
+            }
+        """)
+        self.groq_toggle_btn.clicked.connect(lambda: self.toggle_api_visibility(self.groq_input, self.groq_toggle_btn))
+        
+        groq_save_btn = QPushButton("💾")
+        groq_save_btn.setMaximumWidth(35)
+        groq_save_btn.setMaximumHeight(28)
+        groq_save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2a8a2a;
+                color: #FFFFFF;
+                border: 1px solid #3a9a3a;
+                border-radius: 5px;
+                padding: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #3a9a3a;
+            }
+        """)
+        groq_save_btn.clicked.connect(lambda: self.save_single_api_key("groq_api_key", self.groq_input, "Groq"))
+        
+        groq_layout.addWidget(self.groq_input)
+        groq_layout.addWidget(self.groq_toggle_btn)
+        groq_layout.addWidget(groq_save_btn)
+        
+        settings_layout.addWidget(groq_label)
+        settings_layout.addLayout(groq_layout)
+        
+        # Status Label für API Feedback
+        self.api_status_label = QLabel("")
+        self.api_status_label.setStyleSheet("color: #88FF88; font-size: 11px; font-weight: bold; margin-top: 5px;")
+        settings_layout.addWidget(self.api_status_label)
+        
+        # Separator
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setStyleSheet("background-color: #444444; margin: 10px 0px;")
+        settings_layout.addWidget(separator)
+        
+        # === HOTKEYS SECTION ===
+        hotkeys_label = QLabel("⌨️ Hotkeys konfigurieren")
+        hotkeys_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #FFFFFF; margin-top: 10px;")
+        settings_layout.addWidget(hotkeys_label)
+        
+        # Scrollable area für Hotkeys (ohне double-window Effekt)
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setStyleSheet("""
             QScrollArea {
-                background-color: transparent; 
+                background-color: transparent;
                 border: none;
             }
-            QWidget#qt_scrollarea_viewport {
+            QScrollArea > QWidget {
                 background-color: transparent;
             }
         """)
-        self.tabs.addTab(self.settings_scroll, "Настройки")
+        
+        scroll_widget = QWidget()
+        scroll_widget.setStyleSheet("background-color: transparent;")
+        scroll_layout = QVBoxLayout()
+        scroll_layout.setContentsMargins(0, 0, 0, 0)
+        scroll_layout.setSpacing(8)
+        
+        # Für jeden Hotkey ein Eingabefeld
+        self.hotkey_inputs = {}
+        self.provider_combos = {}
+        self.model_combos = {}
+        
+        for i, hotkey in enumerate(self.config.get("hotkeys", [])):
+            # Container für jeden Hotkey (ohne визуальный Rahmen)
+            hotkey_layout = QVBoxLayout()
+            hotkey_layout.setSpacing(5)
+            
+            # === HOTKEY NAME + COMBINATION (in einer Zeile) ===
+            header_layout = QHBoxLayout()
+            header_layout.setSpacing(8)
+            
+            name_label = QLabel(f"#{i+1}")
+            name_label.setStyleSheet("color: #AAAAAA; font-size: 11px; font-weight: bold; min-width: 25px;")
+            
+            name_input = QLineEdit(hotkey.get("name", ""))
+            name_input.setPlaceholderText("Name der Aktion")
+            name_input.setMaximumHeight(28)
+            name_input.setStyleSheet("""
+                QLineEdit {
+                    background-color: #2a2a2a;
+                    color: #FFFFFF;
+                    border: 1px solid #444444;
+                    border-radius: 5px;
+                    padding: 5px;
+                    font-size: 11px;
+                }
+            """)
+            
+            combo_input = QKeySequenceEdit()
+            combo_input.setKeySequence(hotkey.get("combination", ""))
+            combo_input.setMaximumHeight(28)
+            combo_input.setMaximumWidth(150)
+            combo_input.setStyleSheet("""
+                QKeySequenceEdit {
+                    background-color: #2a2a2a;
+                    color: #FFFFFF;
+                    border: 1px solid #444444;
+                    border-radius: 5px;
+                    padding: 5px;
+                    font-size: 11px;
+                }
+            """)
+            
+            header_layout.addWidget(name_label)
+            header_layout.addWidget(name_input, stretch=1)
+            header_layout.addWidget(combo_input)
+            
+            hotkey_layout.addLayout(header_layout)
+            self.hotkey_inputs[f"name_{i}"] = name_input
+            self.hotkey_inputs[f"combination_{i}"] = combo_input
+            
+            # === PROVIDER + MODEL (in einer Zeile) ===
+            provider_model_layout = QHBoxLayout()
+            provider_model_layout.setSpacing(8)
+            
+            provider_combo = QComboBox()
+            provider_combo.addItems(["Gemini", "Mistral", "Groq"])
+            provider_combo.setCurrentText(hotkey.get("api_provider", "Gemini"))
+            provider_combo.setMaximumHeight(28)
+            provider_combo.setMaximumWidth(120)
+            provider_combo.setStyleSheet("""
+                QComboBox {
+                    background-color: #2a2a2a;
+                    color: #FFFFFF;
+                    border: 1px solid #444444;
+                    border-radius: 5px;
+                    padding: 5px;
+                    font-size: 11px;
+                }
+                QComboBox::drop-down { border: none; }
+                QComboBox QAbstractItemView {
+                    background-color: #2a2a2a;
+                    color: #FFFFFF;
+                    selection-background-color: #444444;
+                }
+            """)
+            
+            model_combo = QComboBox()
+            available_models = self.config.get("available_models", {})
+            current_provider = hotkey.get("api_provider", "Gemini")
+            models_list = available_models.get(current_provider, [])
+            
+            model_combo.addItems(models_list)
+            current_model = hotkey.get("model", "")
+            if current_model and current_model in models_list:
+                model_combo.setCurrentText(current_model)
+            
+            model_combo.setMaximumHeight(28)
+            model_combo.setStyleSheet("""
+                QComboBox {
+                    background-color: #2a2a2a;
+                    color: #FFFFFF;
+                    border: 1px solid #444444;
+                    border-radius: 5px;
+                    padding: 5px;
+                    font-size: 11px;
+                }
+                QComboBox::drop-down { border: none; }
+                QComboBox QAbstractItemView {
+                    background-color: #2a2a2a;
+                    color: #FFFFFF;
+                    selection-background-color: #444444;
+                }
+            """)
+            
+            def update_models(provider_name, idx=i):
+                available = self.config.get("available_models", {})
+                models = available.get(provider_name, [])
+                self.model_combos[f"model_{idx}"].clear()
+                self.model_combos[f"model_{idx}"].addItems(models)
+            
+            provider_combo.currentTextChanged.connect(update_models)
+            
+            provider_model_layout.addWidget(QLabel("Provider:"), 0)
+            provider_model_layout.addWidget(provider_combo, 0)
+            provider_model_layout.addWidget(QLabel("Modell:"), 0)
+            provider_model_layout.addWidget(model_combo, 1)
+            
+            hotkey_layout.addLayout(provider_model_layout)
+            self.provider_combos[f"provider_{i}"] = provider_combo
+            self.model_combos[f"model_{i}"] = model_combo
+            
+            # === PROMPT ===
+            prompt_label = QLabel("Prompt:")
+            prompt_label.setStyleSheet("color: #AAAAAA; font-size: 11px;")
+            
+            prompt_input = QTextEdit(hotkey.get("prompt", ""))
+            prompt_input.setMaximumHeight(60)
+            prompt_input.setStyleSheet("""
+                QTextEdit {
+                    background-color: #2a2a2a;
+                    color: #FFFFFF;
+                    border: 1px solid #444444;
+                    border-radius: 5px;
+                    padding: 5px;
+                    font-size: 11px;
+                }
+            """)
+            
+            hotkey_layout.addWidget(prompt_label)
+            hotkey_layout.addWidget(prompt_input)
+            self.hotkey_inputs[f"prompt_{i}"] = prompt_input
+            
+            # === TYPE + COLOR + DELETE (in einer Zeile) ===
+            footer_layout = QHBoxLayout()
+            footer_layout.setSpacing(8)
+            
+            type_combo = QComboBox()
+            type_combo.addItems(["text", "image"])
+            type_combo.setCurrentText(hotkey.get("type", "text"))
+            type_combo.setMaximumHeight(28)
+            type_combo.setMaximumWidth(100)
+            type_combo.setStyleSheet("""
+                QComboBox {
+                    background-color: #2a2a2a;
+                    color: #FFFFFF;
+                    border: 1px solid #444444;
+                    border-radius: 5px;
+                    padding: 5px;
+                    font-size: 11px;
+                }
+                QComboBox::drop-down { border: none; }
+                QComboBox QAbstractItemView {
+                    background-color: #2a2a2a;
+                    color: #FFFFFF;
+                    selection-background-color: #444444;
+                }
+            """)
+            
+            color_input = QLineEdit(hotkey.get("log_color", "#FFFFFF"))
+            color_input.setMaximumHeight(28)
+            color_input.setMaximumWidth(100)
+            color_input.setStyleSheet("""
+                QLineEdit {
+                    background-color: #2a2a2a;
+                    color: #FFFFFF;
+                    border: 1px solid #444444;
+                    border-radius: 5px;
+                    padding: 5px;
+                    font-size: 11px;
+                }
+            """)
+            
+            def open_color_dialog(idx=i):
+                color = QColorDialog.getColor(QColor(self.hotkey_inputs[f"color_{idx}"].text()))
+                if color.isValid():
+                    self.hotkey_inputs[f"color_{idx}"].setText(color.name())
+            
+            color_btn = QPushButton("🎨")
+            color_btn.setMaximumWidth(35)
+            color_btn.setMaximumHeight(28)
+            color_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #444444;
+                    color: #FFFFFF;
+                    border: 1px solid #555555;
+                    border-radius: 5px;
+                    padding: 4px;
+                    font-size: 11px;
+                }
+                QPushButton:hover { background-color: #555555; }
+            """)
+            color_btn.clicked.connect(lambda: open_color_dialog())
+            
+            delete_btn = QPushButton("🗑️")
+            delete_btn.setMaximumWidth(35)
+            delete_btn.setMaximumHeight(28)
+            delete_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #8B0000;
+                    color: #FFFFFF;
+                    border: 1px solid #A00000;
+                    border-radius: 5px;
+                    padding: 4px;
+                    font-size: 11px;
+                }
+                QPushButton:hover { background-color: #A00000; }
+            """)
+            delete_btn.clicked.connect(lambda: self.delete_hotkey(i))
+            
+            footer_layout.addWidget(QLabel("Typ:"), 0)
+            footer_layout.addWidget(type_combo, 0)
+            footer_layout.addWidget(QLabel("Farbe:"), 0)
+            footer_layout.addWidget(color_input, 0)
+            footer_layout.addWidget(color_btn, 0)
+            footer_layout.addStretch()
+            footer_layout.addWidget(delete_btn, 0)
+            
+            hotkey_layout.addLayout(footer_layout)
+            self.hotkey_inputs[f"type_{i}"] = type_combo
+            self.hotkey_inputs[f"color_{i}"] = color_input
+            
+            # Add separator between hotkeys
+            hotkey_container = QWidget()
+            hotkey_container.setStyleSheet("""
+                QWidget {
+                    background-color: transparent;
+                    border-bottom: 1px solid #333333;
+                    padding-bottom: 8px;
+                }
+            """)
+            hotkey_container.setLayout(hotkey_layout)
+            scroll_layout.addWidget(hotkey_container)
+        
+        scroll_layout.addStretch()
+        scroll_widget.setLayout(scroll_layout)
+        scroll_area.setWidget(scroll_widget)
+        settings_layout.addWidget(scroll_area, stretch=1)
+        
+        # === BUTTONS ===
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(8)
+        
+        add_hotkey_btn = QPushButton("➕ Neuer Hotkey")
+        add_hotkey_btn.setMaximumHeight(32)
+        add_hotkey_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2a8a2a;
+                color: #FFFFFF;
+                border: 1px solid #3a9a3a;
+                border-radius: 5px;
+                padding: 6px 12px;
+                font-weight: bold;
+                font-size: 11px;
+            }
+            QPushButton:hover { background-color: #3a9a3a; }
+        """)
+        add_hotkey_btn.clicked.connect(self.add_new_hotkey)
+        
+        save_btn = QPushButton("💾 Speichern")
+        save_btn.setMaximumHeight(32)
+        save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #1a5a8a;
+                color: #FFFFFF;
+                border: 1px solid #2a6a9a;
+                border-radius: 5px;
+                padding: 6px 12px;
+                font-weight: bold;
+                font-size: 11px;
+            }
+            QPushButton:hover { background-color: #2a6a9a; }
+        """)
+        save_btn.clicked.connect(self.save_settings_from_ui)
+        
+        button_layout.addWidget(add_hotkey_btn)
+        button_layout.addWidget(save_btn)
+        button_layout.addStretch()
+        
+        settings_layout.addLayout(button_layout)
+        
+        settings_widget.setLayout(settings_layout)
+        self.tabs.addTab(settings_widget, "⚙️ Einstellungen")
+
+    def toggle_api_visibility(self, input_field, button):
+        """Wechselt zwischen Anzeige und Verbergen des API-Schlüssels"""
+        if input_field.echoMode() == QLineEdit.Password:
+            input_field.setEchoMode(QLineEdit.Normal)
+            button.setText("🙈")
+        else:
+            input_field.setEchoMode(QLineEdit.Password)
+            button.setText("👁️")
+
+    def save_single_api_key(self, key_name, input_field, provider_name):
+        """Speichert einen einzelnen API-Schlüssel mit Feedback"""
+        try:
+            api_key = input_field.text().strip()
+            
+            if not api_key:
+                QMessageBox.warning(self, "Warnung", f"{provider_name} API-Schlüssel darf nicht leer sein!")
+                self.api_status_label.setText(f"❌ {provider_name}: Leerer Schlüssel nicht gespeichert")
+                return
+            
+            # Speichern в config
+            self.config[key_name] = api_key
+            
+            # Speichern в settings.json
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(self.config, f, ensure_ascii=False, indent=4)
+            
+            # Feedback geben
+            self.api_status_label.setText(f"✅ {provider_name} API-Schlüssel erfolgreich gespeichert!")
+            
+            # Feedback nach 3 Sekunden ausblenden
+            QTimer.singleShot(3000, lambda: self.api_status_label.setText(""))
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Fehler", f"Fehler beim Speichern: {e}")
+            self.api_status_label.setText(f"❌ Fehler beim Speichern von {provider_name}")
 
     def add_new_hotkey(self):
         # Создаем новую горячую клавишу
@@ -947,3 +1313,36 @@ class ClipGenView(QMainWindow):
     def quit_app(self):
         self.tray_icon.hide()
         self.quit_signal.emit()
+
+    def save_settings_from_ui(self):
+        """Speichert die Einstellungen aus der UI in settings.json"""
+        try:
+            # API-Keys speichern
+            self.config["gemini_api_key"] = self.findChild(QLineEdit, "gemini_input").text() if self.findChild(QLineEdit, "gemini_input") else ""
+            self.config["mistral_api_key"] = self.findChild(QLineEdit, "mistral_input").text() if self.findChild(QLineEdit, "mistral_input") else ""
+            self.config["groq_api_key"] = self.findChild(QLineEdit, "groq_input").text() if self.findChild(QLineEdit, "groq_input") else ""
+            
+            # Hotkeys speichern
+            self.config["hotkeys"] = []
+            i = 0
+            while f"name_{i}" in self.hotkey_inputs:
+                hotkey = {
+                    "name": self.hotkey_inputs[f"name_{i}"].text(),
+                    "combination": self.hotkey_inputs[f"combination_{i}"].keySequence().toString(),
+                    "prompt": self.hotkey_inputs[f"prompt_{i}"].toPlainText(),
+                    "api_provider": self.provider_combos[f"provider_{i}"].currentText(),
+                    "model": self.model_combos[f"model_{i}"].currentText(),
+                    "type": self.hotkey_inputs[f"type_{i}"].currentText(),
+                    "log_color": self.hotkey_inputs[f"color_{i}"].text()
+                }
+                self.config["hotkeys"].append(hotkey)
+                i += 1
+            
+            # Einstellungen speichern
+            with open("settings.json", "w", encoding="utf-8") as f:
+                json.dump(self.config, f, ensure_ascii=False, indent=4)
+            
+            QMessageBox.information(self, "Erfolg", "Einstellungen gespeichert!")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Fehler", f"Fehler beim Speichern: {e}")

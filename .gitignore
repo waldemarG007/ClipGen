@@ -54,3 +54,5 @@ coverage.xml
 # Log files
 *.log
 *.csv
+settings.json
+
