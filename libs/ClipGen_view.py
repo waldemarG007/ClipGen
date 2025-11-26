@@ -926,7 +926,7 @@ def setup_settings_tab(self):
     def quit_app(self):
         self.tray_icon.hide()
         self.quit_signal.emit()
-        
+
 
     def save_settings_from_ui(self):
         """Speichert die Einstellungen aus der UI in settings.json"""
