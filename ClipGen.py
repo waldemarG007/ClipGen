@@ -46,14 +46,16 @@ DEFAULT_CONFIG = {
 
 class ClipGen(ClipGenView):
     def __init__(self):
-        # Загрузка настроек перед инициализацией GUI
+        # Laden Sie die Einstellungen VOR der Initialisierung des GUI
         self.load_settings()
         
-        # Инициализируем представление
+        # Nun hat self.config die notwendigen Werte, bevor super().__init__() aufgerufen wird
         super().__init__()
         
-        # Инициализация Gemini
-        genai.configure(api_key=self.config["api_key"])
+        # Initialisierung von Gemini
+        if self.config.get("api_key") and self.config["api_key"] != "YOUR_API_KEY_HERE":
+            genai.configure(api_key=self.config["api_key"])
+        
         self.queue = Queue()
         self.stop_event = threading.Event()
         

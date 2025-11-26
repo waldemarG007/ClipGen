@@ -58,7 +58,7 @@ class ClipGenView(QMainWindow):
         self.tray_icon.setIcon(self.windowIcon())
         self.tray_icon.setToolTip("ClipGen")
 
-        # Erstellen des Kontextmenüs
+        # Erstellen des Kontextmenюs
         tray_menu = QMenu()
         show_action = tray_menu.addAction("Anzeigen")
         show_action.triggered.connect(self.showNormal)
@@ -350,7 +350,12 @@ class ClipGenView(QMainWindow):
         api_key_label.setStyleSheet("margin-top: 5px;")
         api_key_layout.addWidget(api_key_label)
 
-        self.api_key_input = QLineEdit(self.config["api_key"])
+        # API-Schlüssel sicher auslesen
+        api_key = self.config.get("api_key", "")
+        if api_key == "YOUR_API_KEY_HERE":
+            api_key = ""  # Zeige das Eingabefeld leer an, когда kein echter Schlüssel gesetzt ist
+        
+        self.api_key_input = QLineEdit(api_key)
         self.api_key_input.setStyleSheet("""
             border-radius: 8px; 
             border: 1px solid #444444;
