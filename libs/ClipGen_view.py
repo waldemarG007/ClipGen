@@ -1318,10 +1318,10 @@ class ClipGenView(QMainWindow):
         """Speichert die Einstellungen aus der UI in settings.json"""
         try:
             # API-Keys speichern
-            self.config["gemini_api_key"] = self.findChild(QLineEdit, "gemini_input").text() if self.findChild(QLineEdit, "gemini_input") else ""
-            self.config["mistral_api_key"] = self.findChild(QLineEdit, "mistral_input").text() if self.findChild(QLineEdit, "mistral_input") else ""
-            self.config["groq_api_key"] = self.findChild(QLineEdit, "groq_input").text() if self.findChild(QLineEdit, "groq_input") else ""
-            
+            self.config["gemini_api_key"] = self.gemini_input.text() if hasattr(self, 'gemini_input') else ""
+            self.config["mistral_api_key"] = self.mistral_input.text() if hasattr(self, 'mistral_input') else ""
+            self.config["groq_api_key"] = self.groq_input.text() if hasattr(self, 'groq_input') else ""
+
             # Hotkeys speichern
             self.config["hotkeys"] = []
             i = 0
@@ -1337,12 +1337,12 @@ class ClipGenView(QMainWindow):
                 }
                 self.config["hotkeys"].append(hotkey)
                 i += 1
-            
+
             # Einstellungen speichern
             with open("settings.json", "w", encoding="utf-8") as f:
                 json.dump(self.config, f, ensure_ascii=False, indent=4)
-            
+
             QMessageBox.information(self, "Erfolg", "Einstellungen gespeichert!")
-            
+
         except Exception as e:
             QMessageBox.critical(self, "Fehler", f"Fehler beim Speichern: {e}")
