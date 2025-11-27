@@ -575,8 +575,12 @@ class ClipGenView(QMainWindow):
             header_layout = QHBoxLayout()
             header_layout.setSpacing(8)
             
-            name_label = QLabel(f"#{i+1}")
-            name_label.setStyleSheet("color: #AAAAAA; font-size: 11px; font-weight: bold; min-width: 25px;")
+            pos_input = QLineEdit(str(i + 1))
+            pos_input.setMaximumWidth(30)
+            pos_input.setStyleSheet("color: #AAAAAA; font-size: 11px; font-weight: bold; border: 1px solid #444; border-radius: 5px;")
+            pos_input.setAlignment(Qt.AlignCenter)
+            pos_input.returnPressed.connect(lambda idx=i: self.reorder_hotkey(idx))
+            self.hotkey_inputs[f"position_{i}"] = pos_input
             
             name_input = QLineEdit(hotkey.get("name", ""))
             name_input.setPlaceholderText("Name der Aktion")
@@ -607,7 +611,7 @@ class ClipGenView(QMainWindow):
                 }
             """)
             
-            header_layout.addWidget(name_label)
+            header_layout.addWidget(pos_input)
             header_layout.addWidget(name_input, stretch=1)
             header_layout.addWidget(combo_input)
             
@@ -615,6 +619,11 @@ class ClipGenView(QMainWindow):
             self.hotkey_inputs[f"name_{i}"] = name_input
             self.hotkey_inputs[f"combination_{i}"] = combo_input
             
+            # Korrekte Signalverbindung
+            combo_input.keySequenceChanged.connect(
+                lambda seq, idx=i: self.update_hotkey_from_sequence(idx, seq.toString())
+            )
+
             # === PROVIDER + MODEL (in einer Zeile) ===
             provider_model_layout = QHBoxLayout()
             provider_model_layout.setSpacing(8)
@@ -624,6 +633,7 @@ class ClipGenView(QMainWindow):
             provider_combo.setCurrentText(hotkey.get("api_provider", "Gemini"))
             provider_combo.setMaximumHeight(28)
             provider_combo.setMaximumWidth(120)
+            provider_combo.wheelEvent = lambda event: None  # Deaktiviert das Mausrad
             provider_combo.setStyleSheet("""
                 QComboBox {
                     background-color: #2a2a2a;
@@ -652,6 +662,7 @@ class ClipGenView(QMainWindow):
                 model_combo.setCurrentText(current_model)
             
             model_combo.setMaximumHeight(28)
+            model_combo.wheelEvent = lambda event: None  # Deaktiviert das Mausrad
             model_combo.setStyleSheet("""
                 QComboBox {
                     background-color: #2a2a2a;
@@ -716,6 +727,7 @@ class ClipGenView(QMainWindow):
             type_combo.setCurrentText(hotkey.get("type", "text"))
             type_combo.setMaximumHeight(28)
             type_combo.setMaximumWidth(100)
+            type_combo.wheelEvent = lambda event: None  # Deaktiviert das Mausrad
             type_combo.setStyleSheet("""
                 QComboBox {
                     background-color: #2a2a2a;
@@ -747,11 +759,6 @@ class ClipGenView(QMainWindow):
                 }
             """)
             
-            def open_color_dialog(idx=i):
-                color = QColorDialog.getColor(QColor(self.hotkey_inputs[f"color_{idx}"].text()))
-                if color.isValid():
-                    self.hotkey_inputs[f"color_{idx}"].setText(color.name())
-            
             color_btn = QPushButton("🎨")
             color_btn.setMaximumWidth(35)
             color_btn.setMaximumHeight(28)
@@ -766,7 +773,7 @@ class ClipGenView(QMainWindow):
                 }
                 QPushButton:hover { background-color: #555555; }
             """)
-            color_btn.clicked.connect(lambda: open_color_dialog())
+            color_btn.clicked.connect(lambda checked, idx=i: self.open_color_dialog(idx))
             
             delete_btn = QPushButton("🗑️")
             delete_btn.setMaximumWidth(35)
@@ -782,7 +789,7 @@ class ClipGenView(QMainWindow):
                 }
                 QPushButton:hover { background-color: #A00000; }
             """)
-            delete_btn.clicked.connect(lambda: self.delete_hotkey(i))
+            delete_btn.clicked.connect(lambda checked, idx=i: self.delete_hotkey(idx))
             
             footer_layout.addWidget(QLabel("Typ:"), 0)
             footer_layout.addWidget(type_combo, 0)
@@ -890,6 +897,10 @@ class ClipGenView(QMainWindow):
             # Feedback nach 3 Sekunden ausblenden
             QTimer.singleShot(3000, lambda: self.api_status_label.setText(""))
             
+            # API-Clients neu initialisieren
+            if hasattr(self, 'init_api_clients'):
+                self.init_api_clients()
+
         except Exception as e:
             QMessageBox.critical(self, "Fehler", f"Fehler beim Speichern: {e}")
             self.api_status_label.setText(f"❌ Fehler beim Speichern von {provider_name}")
@@ -927,68 +938,111 @@ class ClipGenView(QMainWindow):
         #        handler.action_colors = {k["name"]: k["log_color"] for k in self.config["hotkeys"]}
 
     def reload_settings_tab(self):
-        # Сохраняем индекс текущей активной вкладки
+        """Lädt die Einstellungen-Registerkarte neu"""
+        # Speichern des aktuellen Index
         current_tab_index = self.tabs.currentIndex()
         
-        # Удаляем старый виджет
-        self.tabs.removeTab(self.tabs.indexOf(self.settings_scroll))
+        # Finden und löschen der alten Registerkarte
+        for i in range(self.tabs.count()):
+            if self.tabs.tabText(i) == "⚙️ Einstellungen":
+                widget_to_remove = self.tabs.widget(i)
+                self.tabs.removeTab(i)
+                if widget_to_remove:
+                    widget_to_remove.deleteLater()
+                break
         
-        # Создаем заново
+        # Neuerstellung
         self.setup_settings_tab()
         
-        # Восстанавливаем активную вкладку
-        self.tabs.setCurrentIndex(current_tab_index)
+        # Wiederherstellen des Index, falls möglich
+        if current_tab_index < self.tabs.count():
+            self.tabs.setCurrentIndex(current_tab_index)
+        else:
+            self.tabs.setCurrentIndex(self.tabs.count() - 1)
 
-    def update_hotkey_from_sequence(self, hotkey, sequence):
-        """Обновляет комбинацию клавиш по новой записи последовательности"""
-        if not sequence:  # Если последовательность пустая
+    def update_hotkey_from_sequence(self, idx, sequence):
+        """Aktualisiert die Tastenkombination für einen Hotkey"""
+        if not sequence:
             return
-            
-        # Обновляем в конфигурации
+
+        hotkey = self.config["hotkeys"][idx]
         old_combo = hotkey["combination"]
         
-        # Проверяем, не используется ли уже такая комбинация
         if any(h["combination"] == sequence for h in self.config["hotkeys"] if h != hotkey):
-            # Показываем предупреждение
             QMessageBox.warning(self, 
-                            "Дублирование комбинации", 
-                            f"Комбинация {sequence} уже используется другим действием.",
-                            QMessageBox.Ok)
+                                "Doppelte Tastenkombination",
+                                f"Die Kombination {sequence} wird bereits von einer anderen Aktion verwendet.",
+                                QMessageBox.Ok)
+            # Kombination zurücksetzen
+            combo_input = self.hotkey_inputs.get(f"combination_{idx}")
+            if combo_input:
+                combo_input.setKeySequence(old_combo)
             return
         
-        # Обновляем комбинацию
         hotkey["combination"] = sequence
-        
-        # Обновляем key_states и интерфейс
-        self.update_hotkey(old_combo, sequence)
+        self.update_buttons()
+        self.save_settings()
 
-    def delete_hotkey(self, hotkey):
-        """Удаляет горячую клавишу из конфигурации"""
-        # Просим подтверждение
+    def open_color_dialog(self, idx):
+        """Öffnet den Farbdialog für einen bestimmten Hotkey"""
+        color = QColorDialog.getColor(QColor(self.hotkey_inputs[f"color_{idx}"].text()))
+        if color.isValid():
+            self.hotkey_inputs[f"color_{idx}"].setText(color.name())
+
+    def delete_hotkey(self, idx):
+        """Löscht einen Hotkey anhand seines Index"""
+        # Bestätigung anfordern
+        hotkey_name = self.config["hotkeys"][idx].get("name", f"Hotkey #{idx+1}")
         reply = QMessageBox.question(self, 
-                                'Подтверждение удаления', 
-                                f"Вы уверены, что хотите удалить действие '{hotkey['name']}'?",
+                                'Löschbestätigung',
+                                f"Möchten Sie die Aktion '{hotkey_name}' wirklich löschen?",
                                 QMessageBox.Yes | QMessageBox.No, 
                                 QMessageBox.No)
         
         if reply == QMessageBox.Yes:
-            # Удаляем из конфигурации
-            self.config["hotkeys"].remove(hotkey)
+            # Aus der Konfiguration löschen
+            del self.config["hotkeys"][idx]
             
-            # Обновляем интерфейс
+            # UI aktualisieren
             self.update_buttons()
-            
-            # Перезагружаем настройки
             self.reload_settings_tab()
             
-            # Обновляем key_states
+            # Key-Status aktualisieren
             self.key_states = {key["combination"].lower(): False for key in self.config["hotkeys"]}
-            self.key_states["ctrl"] = False
-            self.key_states["alt"] = False
-            self.key_states["shift"] = False
+            self.key_states.update({"ctrl": False, "alt": False, "shift": False})
             
-            # Сохраняем настройки
+            # Einstellungen speichern
             self.save_settings()
+
+    def reorder_hotkey(self, old_idx):
+        """Sortiert einen Hotkey an eine neue Position"""
+        try:
+            pos_input = self.hotkey_inputs.get(f"position_{old_idx}")
+            if not pos_input:
+                return
+
+            new_pos_str = pos_input.text()
+            new_idx = int(new_pos_str) - 1
+
+            if not (0 <= new_idx < len(self.config["hotkeys"])):
+                QMessageBox.warning(self, "Ungültige Position", f"Bitte geben Sie eine Zahl zwischen 1 und {len(self.config['hotkeys'])} ein.")
+                pos_input.setText(str(old_idx + 1))
+                return
+
+            # Hotkey verschieben
+            hotkey_to_move = self.config["hotkeys"].pop(old_idx)
+            self.config["hotkeys"].insert(new_idx, hotkey_to_move)
+
+            # UI aktualisieren
+            self.save_settings()
+            self.reload_settings_tab()
+
+        except ValueError:
+            QMessageBox.warning(self, "Ungültige Eingabe", "Bitte geben Sie eine gültige Zahl ein.")
+            pos_input.setText(str(old_idx + 1))
+        except Exception as e:
+            QMessageBox.critical(self, "Fehler", f"Ein unerwarteter Fehler ist aufgetreten: {e}")
+            self.reload_settings_tab()
 
     def apply_styles(self):
         self.setStyleSheet("""
@@ -1341,6 +1395,10 @@ class ClipGenView(QMainWindow):
             # Einstellungen speichern
             with open("settings.json", "w", encoding="utf-8") as f:
                 json.dump(self.config, f, ensure_ascii=False, indent=4)
+
+            # API-Clients mit den neuen Einstellungen neu initialisieren
+            if hasattr(self, 'init_api_clients'):
+                self.init_api_clients()
 
             QMessageBox.information(self, "Erfolg", "Einstellungen gespeichert!")
 
