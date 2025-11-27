@@ -629,6 +629,7 @@ class ClipGenView(QMainWindow):
             provider_combo.setCurrentText(hotkey.get("api_provider", "Gemini"))
             provider_combo.setMaximumHeight(28)
             provider_combo.setMaximumWidth(120)
+            provider_combo.wheelEvent = lambda event: None  # Deaktiviert das Mausrad
             provider_combo.setStyleSheet("""
                 QComboBox {
                     background-color: #2a2a2a;
@@ -657,6 +658,7 @@ class ClipGenView(QMainWindow):
                 model_combo.setCurrentText(current_model)
             
             model_combo.setMaximumHeight(28)
+            model_combo.wheelEvent = lambda event: None  # Deaktiviert das Mausrad
             model_combo.setStyleSheet("""
                 QComboBox {
                     background-color: #2a2a2a;
@@ -721,6 +723,7 @@ class ClipGenView(QMainWindow):
             type_combo.setCurrentText(hotkey.get("type", "text"))
             type_combo.setMaximumHeight(28)
             type_combo.setMaximumWidth(100)
+            type_combo.wheelEvent = lambda event: None  # Deaktiviert das Mausrad
             type_combo.setStyleSheet("""
                 QComboBox {
                     background-color: #2a2a2a;
