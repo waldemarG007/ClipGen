@@ -32,15 +32,15 @@ With 1,000 daily requests, you can process hundreds of texts and extract informa
 - 🆓 **Completely free** - 1,000 requests per day at no cost
 - 🔄 **Ultra-fast processing** - Get results for short texts in milliseconds and longer texts in seconds
 - ⌨️ **Hotkey-driven workflow** - No need to switch applications
-- 🧠 **AI-powered operations**:
-  - Grammar, punctuation, and spelling correction
-  - Text rewriting and improvement
-  - Translation between any of 140+ world languages
-  - Explanation of complex terms or concepts
-  - Question answering based on clipboard content
-  - Image analysis, text extraction, and explanation
-  - Custom requests
-  - Humorous commentary generation - fully customizable prompts to match your style
+- 🧠 **Multi-Provider AI Operations**:
+  - Choose between **Google Gemini**, **Mistral**, and **Groq** APIs for each hotkey.
+  - Grammar, punctuation, and spelling correction.
+  - Text rewriting and improvement.
+  - Translation between any of 140+ world languages.
+  - Explanation of complex terms or concepts.
+  - Question answering based on clipboard content.
+  - Image analysis, text extraction, and explanation (with compatible models).
+  - Custom requests and humorous commentary generation—fully customizable prompts.
 
 ## 📸 Screenshots
 
@@ -186,14 +186,15 @@ With ClipGen, the process becomes:
 
 This seamless integration creates a new computing experience where AI assistance feels like a natural extension of your keyboard.
 
-## 🧠 About the AI Model
+## 🧠 About the AI Models
 
-ClipGen uses the powerful **models/gemini-2.0-flash-exp** model from Google, which offers:
+ClipGen is no longer limited to a single model. You can now choose between three powerful API providers for each hotkey, allowing you to select the best model for your specific needs:
 
-- **Fast response times** - Perfect for real-time text processing
-- **High accuracy** - Excellent results for grammar, translation, and analysis tasks
-- **Multimodal capabilities** - Analyzes both text and images effortlessly
-- **1,000 free API calls daily** - More than enough for personal and professional use
+- **Google Gemini**: Offers a great balance of speed and intelligence, including the powerful `gemini-2.0-flash-exp` model with a generous free tier (1,000 requests/day). Ideal for both text and image analysis.
+- **Mistral AI**: Provides access to high-performance open-source models known for their efficiency and strong text-generation capabilities.
+- **Groq**: Delivers exceptionally fast inference speeds, making it perfect for real-time applications where responsiveness is critical.
+
+This multi-provider support gives you the flexibility to customize your workflow, optimize for cost, and leverage the unique strengths of different state-of-the-art AI models.
 
 ## 🔒 Privacy
 
