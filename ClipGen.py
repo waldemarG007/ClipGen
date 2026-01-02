@@ -11,7 +11,7 @@ from PIL import ImageGrab
 from dotenv import load_dotenv
 import google.generativeai as genai
 from google.generativeai import GenerationConfig
-from mistralai import Mistral
+from mistralai.client import MistralClient
 from groq import Groq
 import win32api
 import win32con
@@ -89,7 +89,7 @@ class ClipGen(ClipGenView):
         # Mistral
         self.mistral_client = None
         if self.config.get("mistral_api_key"):
-            self.mistral_client = Mistral(api_key=self.config["mistral_api_key"])
+            self.mistral_client = MistralClient(api_key=self.config["mistral_api_key"])
         
         # Groq
         self.groq_client = None
