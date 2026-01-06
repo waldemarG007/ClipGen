@@ -96,6 +96,60 @@ class ClipGen(ClipGenView):
         if self.config.get("groq_api_key"):
             self.groq_client = Groq(api_key=self.config["groq_api_key"])
 
+    def fetch_models_for_provider(self, provider):
+        """Fetch available models from the provider's API"""
+        try:
+            models = []
+            if provider == "Gemini":
+                if not self.config.get("gemini_api_key"):
+                    raise Exception("Gemini API-Schlüssel fehlt")
+                genai.configure(api_key=self.config["gemini_api_key"])
+                all_models = genai.list_models()
+                models = [m.name for m in all_models if 'generateContent' in m.supported_generation_methods]
+            
+            elif provider == "Mistral":
+                if not self.mistral_client:
+                    if self.config.get("mistral_api_key"):
+                        self.mistral_client = Mistral(api_key=self.config["mistral_api_key"])
+                    else:
+                        raise Exception("Mistral API-Schlüssel fehlt")
+                response = self.mistral_client.models.list()
+                models = [m.id for m in response.data]
+            
+            elif provider == "Groq":
+                if not self.groq_client:
+                    if self.config.get("groq_api_key"):
+                        self.groq_client = Groq(api_key=self.config["groq_api_key"])
+                    else:
+                        raise Exception("Groq API-Schlüssel fehlt")
+                response = self.groq_client.models.list()
+                models = [m.id for m in response.data]
+
+            if not models:
+                raise Exception(f"Keine Modelle für {provider} gefunden")
+
+            # Update config with fetched models
+            if "available_models" not in self.config:
+                self.config["available_models"] = {}
+            self.config["available_models"][provider] = sorted(models)
+            
+            # Save settings
+            self.save_settings()
+            
+            # Refresh UI
+            self.reload_settings_tab()
+            
+            # Show success message
+            self.api_status_label.setText(f"✅ {provider} Modelle erfolgreich aktualisiert!")
+            QTimer.singleShot(3000, lambda: self.api_status_label.setText(""))
+            logger.info(f"Models refreshed for {provider}: {len(models)} models found")
+
+        except Exception as e:
+            logger.error(f"Error fetching models for {provider}: {e}")
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "Fehler", f"Fehler beim Abrufen der Modelle für {provider}: {e}")
+            self.api_status_label.setText(f"❌ Fehler bei {provider} Modell-Update")
+
     def load_settings(self):
         try:
             with open("settings.json", "r", encoding="utf-8") as f:

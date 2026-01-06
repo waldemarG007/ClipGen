@@ -395,8 +395,27 @@ class ClipGenView(QMainWindow):
         """)
         gemini_save_btn.clicked.connect(lambda: self.save_single_api_key("gemini_api_key", self.gemini_input, "Gemini"))
         
+        gemini_refresh_btn = QPushButton("🔄")
+        gemini_refresh_btn.setMaximumWidth(35)
+        gemini_refresh_btn.setMaximumHeight(28)
+        gemini_refresh_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #444444;
+                color: #FFFFFF;
+                border: 1px solid #555555;
+                border-radius: 5px;
+                padding: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #555555;
+            }
+        """)
+        gemini_refresh_btn.clicked.connect(lambda: self.fetch_models_for_provider("Gemini"))
+
         gemini_layout.addWidget(self.gemini_input)
         gemini_layout.addWidget(self.gemini_toggle_btn)
+        gemini_layout.addWidget(gemini_refresh_btn)
         gemini_layout.addWidget(gemini_save_btn)
         
         settings_layout.addWidget(gemini_label)
@@ -457,8 +476,27 @@ class ClipGenView(QMainWindow):
         """)
         mistral_save_btn.clicked.connect(lambda: self.save_single_api_key("mistral_api_key", self.mistral_input, "Mistral"))
         
+        mistral_refresh_btn = QPushButton("🔄")
+        mistral_refresh_btn.setMaximumWidth(35)
+        mistral_refresh_btn.setMaximumHeight(28)
+        mistral_refresh_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #444444;
+                color: #FFFFFF;
+                border: 1px solid #555555;
+                border-radius: 5px;
+                padding: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #555555;
+            }
+        """)
+        mistral_refresh_btn.clicked.connect(lambda: self.fetch_models_for_provider("Mistral"))
+
         mistral_layout.addWidget(self.mistral_input)
         mistral_layout.addWidget(self.mistral_toggle_btn)
+        mistral_layout.addWidget(mistral_refresh_btn)
         mistral_layout.addWidget(mistral_save_btn)
         
         settings_layout.addWidget(mistral_label)
@@ -519,8 +557,27 @@ class ClipGenView(QMainWindow):
         """)
         groq_save_btn.clicked.connect(lambda: self.save_single_api_key("groq_api_key", self.groq_input, "Groq"))
         
+        groq_refresh_btn = QPushButton("🔄")
+        groq_refresh_btn.setMaximumWidth(35)
+        groq_refresh_btn.setMaximumHeight(28)
+        groq_refresh_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #444444;
+                color: #FFFFFF;
+                border: 1px solid #555555;
+                border-radius: 5px;
+                padding: 4px;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #555555;
+            }
+        """)
+        groq_refresh_btn.clicked.connect(lambda: self.fetch_models_for_provider("Groq"))
+
         groq_layout.addWidget(self.groq_input)
         groq_layout.addWidget(self.groq_toggle_btn)
+        groq_layout.addWidget(groq_refresh_btn)
         groq_layout.addWidget(groq_save_btn)
         
         settings_layout.addWidget(groq_label)
