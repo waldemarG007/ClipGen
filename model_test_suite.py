@@ -5,7 +5,7 @@ import base64
 import time
 from datetime import datetime
 import google.generativeai as genai
-from mistralai.client import MistralClient
+from mistralai import Mistral
 from groq import Groq
 from PIL import Image
 
@@ -95,7 +95,7 @@ def main():
     mistral_api_key = api_keys.get("mistral")
     if mistral_api_key and "YOUR_API_KEY_HERE" not in mistral_api_key:
         try:
-            mistral_client = MistralClient(api_key=mistral_api_key)
+            mistral_client = Mistral(api_key=mistral_api_key)
             all_models_to_test["Mistral"] = get_mistral_models(mistral_client)
         except Exception as e:
             print(f"FEHLER beim Abrufen der Mistral-Modelle: {e}")
@@ -146,13 +146,13 @@ def main():
         if "Mistral" in all_models_to_test:
             print("\n--- Teste Mistral-Modelle ---")
             try:
-                mistral_client = MistralClient(api_key=mistral_api_key)
+                mistral_client = Mistral(api_key=mistral_api_key)
                 base64_image = encode_image_to_base64(IMAGE_PATH)
                 for model_name in all_models_to_test["Mistral"]:
                     print(f"Teste Modell: {model_name}...")
                     try:
                         messages = [{"role": "user", "content": [{"type": "text", "text": PROMPT}, {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}}]}]
-                        response = mistral_client.chat.completions.create(model=model_name, messages=messages)
+                        response = mistral_client.chat.complete(model=model_name, messages=messages)
                         result = response.choices[0].message.content.strip()
                     except Exception as e:
                         result = f"FEHLER: {e}"
