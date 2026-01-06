@@ -793,6 +793,23 @@ class ClipGenView(QMainWindow):
             footer_layout.addWidget(color_input, 0)
             footer_layout.addWidget(color_btn, 0)
             footer_layout.addStretch()
+
+            move_up_btn = QPushButton("↑")
+            move_up_btn.setMaximumWidth(35)
+            move_up_btn.setMaximumHeight(28)
+            move_up_btn.clicked.connect(lambda checked, idx=i: self.move_hotkey_up(idx))
+            if i == 0:
+                move_up_btn.setEnabled(False)
+
+            move_down_btn = QPushButton("↓")
+            move_down_btn.setMaximumWidth(35)
+            move_down_btn.setMaximumHeight(28)
+            move_down_btn.clicked.connect(lambda checked, idx=i: self.move_hotkey_down(idx))
+            if i == len(self.config.get("hotkeys", [])) - 1:
+                move_down_btn.setEnabled(False)
+
+            footer_layout.addWidget(move_up_btn)
+            footer_layout.addWidget(move_down_btn)
             footer_layout.addWidget(delete_btn, 0)
             
             hotkey_layout.addLayout(footer_layout)
@@ -1009,6 +1026,20 @@ class ClipGenView(QMainWindow):
             
             # Einstellungen speichern
             self.save_settings()
+
+    def move_hotkey_up(self, idx):
+        """Verschiebt einen Hotkey um eine Position nach oben."""
+        if idx > 0:
+            self.config["hotkeys"].insert(idx - 1, self.config["hotkeys"].pop(idx))
+            self.save_settings()
+            self.reload_settings_tab()
+
+    def move_hotkey_down(self, idx):
+        """Verschiebt einen Hotkey um eine Position nach unten."""
+        if idx < len(self.config["hotkeys"]) - 1:
+            self.config["hotkeys"].insert(idx + 1, self.config["hotkeys"].pop(idx))
+            self.save_settings()
+            self.reload_settings_tab()
 
     def apply_styles(self):
         self.setStyleSheet("""
